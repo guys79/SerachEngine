@@ -149,4 +149,17 @@ class Parser:
         else:
             self.hash_of_words[upper_word] = numer_of_app + 1
 
+    def percentage_number_parsing(self, percent_term):
+        length = len(percent_term)
+        num = None
+        if percent_term[length -1] == '%':
+            if percent_term[length -2] == ' ':
+                num = self.convert_number_to_wanted_state(percent_term[:-2])
+            else:
+                num = self.convert_number_to_wanted_state(percent_term[:-1])
+        elif percent_term[-8:].lower() == ' percent':
+            num = self.convert_number_to_wanted_state(percent_term[:-8])
+        elif percent_term[-11:].lower() == ' percentage':
+            num = self.convert_number_to_wanted_state(percent_term[:-11])
+        return '%s%s' % (num,'%')
 
