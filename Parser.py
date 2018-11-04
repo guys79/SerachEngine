@@ -1,4 +1,3 @@
-
 class Parser:
     hash_of_words = None
 
@@ -12,8 +11,13 @@ class Parser:
         newText=text
         return newText
 
+
+
+    # This function will convert the number term to the wanted state as stated in the assignment
     def convert_number_to_wanted_state(self,term):
         num = self.parseNumber(term)
+        if '/' in str(num):
+            return num
         if num < 1000:
             return self.curve_around_the_edges(num)
         if num < 1000 ** 2:
@@ -68,6 +72,8 @@ class Parser:
 
             end_of = term.lower()
 
+            if end_of[-2:] == 'bn' or end_of[-3:] == ' bn':
+                return 'B'
             if len(term) > 8 and (end_of[-8:] == 'thousand' or end_of[-9:] == 'thousands'):
                 return 'K'
             if len(term) > 7 and (end_of[-7:] == 'million' or end_of[-8:] == 'millions'):
@@ -97,8 +103,10 @@ class Parser:
     # This function will parse a number like 100,000 or 0.566
     def number_case_handler(self, number):
         number = number.replace(',', '')
-        number = float(number)
-        return number
+        if '/' in number:
+            return number
+        new_number = float(number)
+        return new_number
 
 
     # This function will parse a number in it's irregular form
@@ -129,6 +137,7 @@ class Parser:
         while i < length and ((number[i] >= '0' and number[i] <= '9') or number[i] == ',' or number[i] == '.'):
             new_number = new_number + number[i]
             i = i + 1
+
         return self.number_case_handler(new_number)
 
     # This function will handle a word regard to small and big letters and adds the word the the dictionary
@@ -150,6 +159,7 @@ class Parser:
         else:
             self.hash_of_words[upper_word] = numer_of_app + 1
 
+    # This function will parse the percentage term
     def percentage_number_parsing(self, percent_term):
         length = len(percent_term)
         num = None
@@ -164,34 +174,28 @@ class Parser:
             num = self.convert_number_to_wanted_state(percent_term[:-11])
         return '%s%s' % (num,'%')
 
-    def monthToNum(self,NameOfMonth):
-        return {
-            'Jan': 1,'Feb': 2,'Mar': 3,'Apr': 4,'May': 5,'Jun': 6,'Jul': 7,'Aug': 8,'Sep': 9,'Oct': 10,'Nov': 11,'Dec': 12,
-            'jan': 1,'feb': 2,'mar': 3,'apr': 4,'may': 5,'jun': 6,'jul': 7,'aug': 8,'sep': 9,'oct': 10,'nov': 11,'dec': 12,
-            'JAN': 1,'FEB': 2,'MAR': 3,'APR': 4,'MAY': 5,'JUN': 6,'JUL': 7,'AUG': 8,'SEP': 9,'OCT': 10,'NOV': 11,'DEC': 12,
-            'January': 1,'February': 2,'March': 3,'April': 4,'May': 5,'June': 6,'July': 7,'August': 8,'September': 9,'October': 10,'November': 11,'December': 12,
-            'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12,
-            'JANUARY': 1,'FEBRUARY': 2,'MARCH': 3,'APRIL': 4,'MAY': 5,'JUNE': 6,'JULY': 7,'AUGUST': 8,'SEPTEMBER': 9,'OCTOBER': 10,'NOVEMBER': 11,'DECEMBER': 12
-        }[NameOfMonth]
-
-    def date(self,term):
-        newTerm= term.split()
-        if "1" in newTerm[0] or "2" in newTerm[0] or "3" in newTerm[0] or "4" in newTerm[0] or "5" in newTerm[0] or "6" in newTerm[0] or "7" in newTerm[0] or "8" in newTerm[0] or "9" in newTerm[0]:
-            month=self.monthToNum(newTerm[1])
-            day=newTerm[0]
-        else:
-            month=self.monthToNum(newTerm[0])
-            day=newTerm[1]
-        month=str(month)
-        if len(month)<2:
-            month="0"+month
-        if len(day)<2:
-            day="0"+day
-        if int(day)<32:
-            return month + "-" + day
-        return day + "-" + month
+    # This function will parse a price number term like $12000000000 to 12000 M dollars
+    def price_number_parsing(self,price_term):
+        length = len(price_term)
+        term_fo_dollars = 'Dollars'
+        if length == 0:
+            return None
+        if price_term[0] == '$':
+            num = price_term[1:]
+        elif price_term[-12:].lower() == 'u.s. dollars':
+            num = price_term[:-13]
+        elif price_term[-11:].lower() == 'u.s. dollar':
+            num = price_term[:-12]
+        elif price_term[-7:].lower() == 'dollars':
+            num = price_term[:-8]
+        else: # dollar
+            print(price_term[-7:])
+            num = price_term[:-7]
+        num = self.parseNumber(num)
+        if '/' in str(num):
+            return "%s %s" % (num,term_fo_dollars)
+        if num >= 1000000:
+            return "%s M %s" % (self.curve_around_the_edges(num / (1000 ** 2)), term_fo_dollars)
+        return "%s %s" % (self.curve_around_the_edges(num), term_fo_dollars)
 
 
-
-x=Parser()
-print(x.date("31 APR"))
