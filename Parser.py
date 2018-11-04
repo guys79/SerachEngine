@@ -1,6 +1,9 @@
 class Parser:
+    hash_of_words = None
+
     # The constructor of the class
     def __init__(self):
+        self.hash_of_words = {}# Maybe add a function that reads a data from a file (if we have already parsed before)
         return
 
     # This function will receive a text and will return the text after parse using set of rules
@@ -127,6 +130,23 @@ class Parser:
             i = i + 1
         return self.number_case_handler(new_number)
 
-
+    # This function will handle a word regard to small and big letters and adds the word the the dictionary
+    def word_scan(self,word):
+        upper_word = word.upper()
+        numer_of_app = 0
+        if len(word)>0 and word[0]>='A' and word[0]<='Z':
+            if upper_word in self.hash_of_words:
+                numer_of_app = self.hash_of_words[upper_word]
+            self.hash_of_words[upper_word] = numer_of_app + 1
+        elif len(word)>0 and word[0]>='a' and word[0]<='z':
+            lower_word = word.lower()
+            if lower_word in self.hash_of_words:
+                numer_of_app = self.hash_of_words[lower_word]
+            elif upper_word in self.hash_of_words:
+                numer_of_app = self.hash_of_words[upper_word]
+                del self.hash_of_words[upper_word]
+            self.hash_of_words[lower_word] = numer_of_app + 1
+        else:
+            self.hash_of_words[upper_word] = numer_of_app + 1
 
 
