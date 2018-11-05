@@ -208,7 +208,7 @@ class Parser:
     def date(self,term):
         term = term.lower()
         newTerm = term.split(' ')
-        if self.is_number(newTerm[0]):
+        if self.is_integer(newTerm[0]):
             month = self.monthToNum(newTerm[1])
             day = newTerm[0]
         else:
@@ -223,9 +223,49 @@ class Parser:
             return month + "-" + day
         return day + "-" + month
 
-    def is_number(self,number):
+    def is_integer(self,number):
         try:
             int(number)
             return True
         except Exception:
             return False
+
+    def full_date(self,term):
+        if "/" in term:
+            newTerm=term.split("/")
+            if newTerm[0]>12 or newTerm[1]>12:
+                if int(newTerm[1])>12:
+                    temp = newTerm[1]
+                    newTerm[1] = newTerm[0]
+                    newTerm[0] = temp
+                if len(newTerm[1])==1:
+                    newTerm[1]="0"+newTerm[1]
+                return newTerm[0]+"-"+newTerm[1]+"-"+newTerm[2]
+            return"not possible"
+        else:
+            term = term.lower()
+            term=term.replace("th","")
+            term=term.replace(",", "")
+            newTerm = term.split(' ')
+            if len(newTerm)<3:
+                return "not possible"
+            if self.is_integer(newTerm[1]):
+                temp=newTerm[1]
+                newTerm[1]=newTerm[0]
+                newTerm[0]=temp
+            day=self.date(newTerm[0]+" "+newTerm[1])
+            year = self.date(newTerm[1] +" "+ newTerm[2])
+            day=day[3:]
+            year=year.split("-")
+            month=year[1]
+            year=year[0]
+            return day+"-"+month+"-"+year
+
+
+
+
+
+
+
+x= Parser()
+print(x.full_date("3/14/2016"))
