@@ -15,20 +15,23 @@ class Parser:
 
     # This function will convert the number term to the wanted state as stated in the assignment
     def convert_number_to_wanted_state(self,term):
-        num = self.parseNumber(term)
-        if '/' in str(num):
-            return num
-        if num < 1000:
-            return self.curve_around_the_edges(num)
-        if num < 1000 ** 2:
-            return "%s%s" % (self.curve_around_the_edges(num /1000),'K')
-        if num < 1000 ** 3:
-            return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 2)),'M')
-        #if num < 1000 ** 4:
-        return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 3)),'B')
-        #if num < 1000 ** 5:
-        #    return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 4)),'T')
-       # return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 5)),'Q')
+        try:
+            num = self.parseNumber(term)
+            if '/' in str(num):
+                return num
+            if num < 1000:
+                return self.curve_around_the_edges(num)
+            if num < 1000 ** 2:
+                return "%s%s" % (self.curve_around_the_edges(num /1000),'K')
+            if num < 1000 ** 3:
+                return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 2)),'M')
+            #if num < 1000 ** 4:
+            return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 3)),'B')
+            #if num < 1000 ** 5:
+            #    return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 4)),'T')
+           # return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 5)),'Q')
+        except Exception:
+            return None
 
     # This function will change numbers like 180.000 to 180
     def curve_around_the_edges(self,number):
@@ -208,12 +211,12 @@ class Parser:
     def date(self,term):
         term = term.lower()
         newTerm = term.split(' ')
-        if self.is_number(newTerm[0]):
+        if self.is_integer(newTerm[0]):
             month = self.monthToNum(newTerm[1])
             day = newTerm[0]
         else:
             month = self.monthToNum(newTerm[0])
-            day=newTerm[1]
+            day = newTerm[1]
         month = str(month)
         if len(month) < 2:
             month = "0" + month
@@ -223,9 +226,64 @@ class Parser:
             return month + "-" + day
         return day + "-" + month
 
-    def is_number(self,number):
+    def is_integer(self,number):
         try:
             int(number)
             return True
         except Exception:
             return False
+
+    def is_integer(self,number):
+        try:
+            float(number)
+            return True
+        except Exception:
+            return False
+
+    # This function will get a range parameter and will parse it
+    def range_term_parser(self,range_term):
+        # number of - in the term
+        number_of_hyphens = range_term.count('-')
+
+        # If the term is word-word-word
+        if number_of_hyphens == 2:
+            return range_term
+
+        first_half = ''
+        second_half = ''
+        # if the term is 'Between number and number'
+        if number_of_hyphens == 0:
+            end_of_ex = range_term[8:]
+            index = end_of_ex.find(' and')
+            first_half = end_of_ex[ : index]
+            second_half = end_of_ex[end_of_ex.find(' and') + 5:]
+        # if the term is word-word or word-number or number-word or number-number
+        elif number_of_hyphens == 1:
+            index = range_term.find('-')
+            first_half = range_term[:index]
+            second_half = range_term[index + 1:]
+
+        list_to_return = []
+        temp = self.convert_number_to_wanted_state(first_half)
+        if temp != None:
+            first_half = temp
+            list_to_return.append(first_half)
+
+        temp = self.convert_number_to_wanted_state(second_half)
+        if temp != None:
+            second_half = temp
+            list_to_return.append(second_half)
+        list_to_return.append('%s-%s' % (first_half,second_half))
+        return list_to_return
+
+
+
+
+#range_term = 'between 18.567 and 24.93475 Thousand'
+#end_of_ex = range_term[8:]
+#number1 = end_of_ex[:end_of_ex.find(' and')]
+#number2 = end_of_ex[end_of_ex.find(' and') + 5:]
+#print(number1)
+#print(number2)
+parser = Parser()
+print(parser.range_term_parser('between 1000 Million and guy'))
