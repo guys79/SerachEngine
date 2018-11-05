@@ -201,27 +201,31 @@ class Parser:
 
     def monthToNum(self,NameOfMonth):
         return {
-            'Jan': 1,'Feb': 2,'Mar': 3,'Apr': 4,'May': 5,'Jun': 6,'Jul': 7,'Aug': 8,'Sep': 9,'Oct': 10,'Nov': 11,'Dec': 12,
             'jan': 1,'feb': 2,'mar': 3,'apr': 4,'may': 5,'jun': 6,'jul': 7,'aug': 8,'sep': 9,'oct': 10,'nov': 11,'dec': 12,
-            'JAN': 1,'FEB': 2,'MAR': 3,'APR': 4,'MAY': 5,'JUN': 6,'JUL': 7,'AUG': 8,'SEP': 9,'OCT': 10,'NOV': 11,'DEC': 12,
-            'January': 1,'February': 2,'March': 3,'April': 4,'May': 5,'June': 6,'July': 7,'August': 8,'September': 9,'October': 10,'November': 11,'December': 12,
-            'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12,
-            'JANUARY': 1,'FEBRUARY': 2,'MARCH': 3,'APRIL': 4,'MAY': 5,'JUNE': 6,'JULY': 7,'AUGUST': 8,'SEPTEMBER': 9,'OCTOBER': 10,'NOVEMBER': 11,'DECEMBER': 12
+            'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12
         }[NameOfMonth]
 
     def date(self,term):
-        newTerm= term.split()
-        if "1" in newTerm[0] or "2" in newTerm[0] or "3" in newTerm[0] or "4" in newTerm[0] or "5" in newTerm[0] or "6" in newTerm[0] or "7" in newTerm[0] or "8" in newTerm[0] or "9" in newTerm[0]:
-            month=self.monthToNum(newTerm[1])
-            day=newTerm[0]
+        term = term.lower()
+        newTerm = term.split(' ')
+        if self.is_number(newTerm[0]):
+            month = self.monthToNum(newTerm[1])
+            day = newTerm[0]
         else:
-            month=self.monthToNum(newTerm[0])
+            month = self.monthToNum(newTerm[0])
             day=newTerm[1]
-        month=str(month)
-        if len(month)<2:
-            month="0"+month
-        if len(day)<2:
-            day="0"+day
-        if int(day)<32:
+        month = str(month)
+        if len(month) < 2:
+            month = "0" + month
+        if len(day) < 2:
+            day = "0" + day
+        if int(day) < 32:
             return month + "-" + day
         return day + "-" + month
+
+    def is_number(self,number):
+        try:
+            int(number)
+            return True
+        except Exception:
+            return False
