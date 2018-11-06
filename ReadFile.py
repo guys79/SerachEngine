@@ -1,6 +1,11 @@
 import os
 my_dict = {}
+indexInFile=0
+indexInDirectory=0
+namesInDirectory=[]
+docsInFile=[]
 class justATest:
+
     def findTheName(self,content,firstLine):
         found1 = -1
         i = firstLine
@@ -11,8 +16,9 @@ class justATest:
         i=i-1
         end= "</DOCNO>"
         myString=content[i]
-        nameOfFile=myString[myString.find(start)+len(start)+1:myString.find(end)]
+        nameOfFile=myString[myString.find(start)+len(start)+1:myString.find(end)-1]
         return nameOfFile
+
     def storeFiles(self, start, end,content,path):
         try:
             slesh = "A\H"
@@ -26,39 +32,67 @@ class justATest:
 
     def store_files(self, start, end,content):
         newArrey=[]
-        for i in range(start, end):
+        for i in range(start, end+1):
             newArrey.append(content[i])
-        my_dict[self.findTheName(content,start)]=newArrey
+        tempArr=[self.findTheName(content,start),newArrey]
+        self.docsInFile.append(tempArr)
 
-    def sepereteFiles(self):
-        #try:
-         #   os.mkdir("allDocs")
-        #except IOError:
-         #   print("already exist")
-        path= "C:\Users\yonatan\Desktop\corpus"
-        #input("Enter a path:   ")
-        yosy=0
+    def getFile(self):
+        if self.indexInDirectory==len(self.namesInDirectory):
+            return "all docs are received"
+        if self.indexInFile==len(self.docsInFile):
+            self.docsInFile=[]
+            for file in os.listdir(self.namesInDirectory[self.indexInDirectory]):
+                slesh = "A\H"
+                slesh = slesh[1]
+                file = self.namesInDirectory[self.indexInDirectory] + slesh + file
+                the_file = open(file, "r")
+                with the_file:
+                    arreyOfFile = the_file.readlines()
+                    for i in range(0, len(arreyOfFile)):
+                        if "<DOC>" in arreyOfFile[i]:
+                            num = i
+                            while False == ("</DOC>" in arreyOfFile[num]):
+                                num = num + 1
+                            self.store_files(i, num, arreyOfFile)
+                the_file.close()
+            self.indexInFile=0
+            return self.getFile()
+        else:
+            self.indexInFile=self.indexInFile+1
+            if self.indexInFile == len(self.docsInFile):
+                self.indexInDirectory = self.indexInDirectory + 1
+            return self.docsInFile[self.indexInFile-1]
+
+    def __init__(self,path):
+        self.indexInFile = 0
+        self.indexInDirectory = 0
+        self.namesInDirectory = []
+        self.docsInFile = []
         for filename in os.listdir(path):
-            print("i is")
-            print(yosy)
-            yosy=yosy+1
             slesh="A\H"
             slesh=slesh[1]
             filename=path+slesh+filename
-            for file in os.listdir(filename):
-                file=filename+slesh+file
-                the_file= open(file,"r")
-                with the_file:
-                    arreyOfFile= the_file.readlines()
-                    for i in range(0,len(arreyOfFile)):
-                        if "<DOC>" in arreyOfFile[i]:
-                            num=i
-                            while False == ("</DOC>" in arreyOfFile[num]):
-                                num=num+1
-                            self.store_files(i,num,arreyOfFile)
-                the_file.close()
-
-    def inite(self):
+            self.namesInDirectory.append(filename)
         return
-x= justATest()
-x.sepereteFiles()
+
+x= justATest("C:\Users\owner\Desktop\pest")
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+print(x.getFile())
+
