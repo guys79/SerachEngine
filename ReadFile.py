@@ -76,23 +76,4 @@ class justATest:
             self.namesInDirectory.append(filename)
         return
 
-x= justATest("C:\Users\owner\Desktop\pest")
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
 
