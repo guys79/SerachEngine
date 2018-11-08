@@ -6,13 +6,6 @@ class Parser:
         self.hash_of_words = {}# Maybe add a function that reads a data from a file (if we have already parsed before)
         return
 
-    # This function will receive a text and will return the text after parse using set of rules
-    def parseWord(self,text):
-        newText=text
-        return newText
-
-
-
     # This function will convert the number term to the wanted state as stated in the assignment
     def convert_number_to_wanted_state(self,term):
         try:
@@ -192,7 +185,6 @@ class Parser:
         elif price_term[-7:].lower() == 'dollars':
             num = price_term[:-8]
         else: # dollar
-            print(price_term[-7:])
             num = price_term[:-7]
         num = self.parseNumber(num)
         if '/' in str(num):
@@ -203,16 +195,22 @@ class Parser:
 
 
     def monthToNum(self,NameOfMonth):
-        return {
-            'jan': 1,'feb': 2,'mar': 3,'apr': 4,'may': 5,'jun': 6,'jul': 7,'aug': 8,'sep': 9,'oct': 10,'nov': 11,'dec': 12,
-            'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12
-        }[NameOfMonth]
+        try:
+            return {
+                'jan': 1,'feb': 2,'mar': 3,'apr': 4,'may': 5,'jun': 6,'jul': 7,'aug': 8,'sep': 9,'oct': 10,'nov': 11,'dec': 12,
+                'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12
+            }[NameOfMonth]
+        except Exception:
+            return None
 
-    def date(self,term):
+    # returns a date from the kind of mm/dd or mm/yy depends on the given term
+    def date(self, term):
         term = term.lower()
         newTerm = term.split(' ')
         if self.is_integer(newTerm[0]):
             month = self.monthToNum(newTerm[1])
+            if month == "it is not a month":
+                return month
             day = newTerm[0]
         else:
             month = self.monthToNum(newTerm[0])
@@ -233,7 +231,7 @@ class Parser:
         except Exception:
             return False
 
-    def is_integer(self,number):
+    def is_float(self,number):
         try:
             float(number)
             return True
@@ -247,7 +245,7 @@ class Parser:
 
         # If the term is word-word-word
         if number_of_hyphens == 2:
-            return range_term
+            return [range_term]
 
         first_half = ''
         second_half = ''
@@ -257,6 +255,7 @@ class Parser:
             index = end_of_ex.find(' and')
             first_half = end_of_ex[ : index]
             second_half = end_of_ex[end_of_ex.find(' and') + 5:]
+
         # if the term is word-word or word-number or number-word or number-number
         elif number_of_hyphens == 1:
             index = range_term.find('-')
@@ -276,14 +275,648 @@ class Parser:
         list_to_return.append('%s-%s' % (first_half,second_half))
         return list_to_return
 
+    # This function will get the String that will represent the doc
+    # and will Parse it
+    def parse_doc(self,doc_text):
+        temp_text = doc_text
+
+    def parse_to_unique_terms(self,doc_test):
+        first_index = 0
+        second_index = doc_test.find(' ')
+        current_term = ''
+        while second_index != -1:
+            current_term = doc_test[first_index:second_index]
+            length = len(current_term)
+            if length > 0 and self.is_float(current_term[0]):
+                return
+
+        if first_index == 0:
+            return doc_test
+
+    def is_number(self,term):
+        index = term.find('.')
+        if index == len(term)-1:
+            return False
+        temp = term
+        if index != -1:
+            temp = temp[:index]
+        import re
+        indices = [m.start() for m in re.finditer(',', temp)]
+        length = len(indices)
+        if length > 0:
+            if indices[length - 1] != len(temp) - 4:
+                return False
+            if indices[0]< 1 or indices[0]>3:
+                return False
+            for i in range(0,length-1):
+                if indices[i+1] - indices[i] !=4:
+                    return False
+
+        temp = temp.replace(',', '')
+        if index != -1:
+            temp = temp + term[index:]
+        return self.is_float(temp)
+
+
+    def is_number_term(self,term):
+        length = len(term)
+        term = term.lower()
+        if self.is_number(term):
+            return True
+        if term[length-1] in ['k','m','b','t','q']:
+            return self.is_number(term[:-1])
+        if term[-2:] == 'bn':
+            return self.is_number(term[:-2])
+        return False
+
+    # this function should return DD-MM-YY format for all the formats of how to write full date
+    def full_date(self,term):
+        # we check if the date is from the from of dd/mm/yy
+        if "/" in term:
+            newTerm=term.split("/")
+            # we check correction
+            if self.is_integer(newTerm[0])==False or self.is_integer(newTerm[1])==False or self.is_integer(newTerm[2])==False:
+                return "wrong string"
+            # we check if we can identify if the string id dd/mm/yy or mm/dd/yy
+            if (newTerm[0]>12 or newTerm[1]>12) and len(newTerm[2])>1:
+                if int(newTerm[1])>12:
+                    temp = newTerm[1]
+                    newTerm[1] = newTerm[0]
+                    newTerm[0] = temp
+                if len(newTerm[1])==1:
+                    newTerm[1]="0"+newTerm[1]
+                arrayOfDates=[]
+                day=newTerm[0]
+                month=newTerm[1]
+                year=newTerm[2]
+                if len(year)>2:
+                    arrayOfDates.append(year)
+                    if len(year)==3:
+                        year=year[1:]
+                    else:
+                        year=year[2:]
+                arrayOfDates.append(day+"-"+month+"-"+year)
+                arrayOfDates.append(day+"-"+month)
+                return arrayOfDates
+            return"not possible"
+        # we check if the format is written in words
+        else:
+            term = term.lower()
+            term = term.replace("th","")
+            term = term.replace(",", "")
+            newTerm = term.split(' ')
+            if len(newTerm)<3:
+                return "not possible"
+            if self.is_integer(newTerm[1]):
+                temp=newTerm[1]
+                newTerm[1]=newTerm[0]
+                newTerm[0]=temp
+            day=self.date(newTerm[0]+" "+newTerm[1])
+            if day == "it is not a month":
+                return "it is not a month"
+            year = self.date(newTerm[1] +" "+ newTerm[2])
+            day=day[3:]
+            year=year.split("-")
+            month=year[1]
+            year=year[0]
+            return day+"-"+month+"-"+year
+
+    def parse_to_unique_terms(self,doc_test):
+        index = -1  # The index of the current closest space
+        new_doc = []  # The new doc
+        current_term = ''  # The current term
+        next_term = ''  # The next term
+        more_words = index != -1
+        save_doc = doc_test
+        index_saver = index
+        additional_word = ''
+        # Do while index != -1
+        while True:
+            print("doc_test = %s" % doc_test)
+
+            index = doc_test.find(' ')
+            more_words = index != -1
+            # Get the current term and it's length, shorten the doc and find the next space
+            if not more_words:
+                current_term = doc_test
+            else:
+                current_term = doc_test[0:index]
+            doc_test = doc_test[index + 1:]
+            index = doc_test.find(' ')
+            length = len(current_term)
+
+            if self.is_integer_that_ends_with_th(current_term):
+                current_term = current_term[:-2]
+            # If the term is a number
+            if length > 0 and self.is_number_term(current_term):
+                # If there are no more terms
+                if not more_words:
+                    # Is just a number
+                    new_doc.append(self.convert_number_to_wanted_state(current_term))
+                    return new_doc
+
+                # If there are more terms
+                more_words = index != -1
+                if not more_words:
+                    next_term = doc_test
+                else:
+                    next_term = doc_test[0:index]
+                doc_test = doc_test[index + 1:]
+
+                save_next_term = next_term
+                save_doc = doc_test
+                # If the term is an integer
+                if self.is_integer(current_term):
+                    if int(current_term).__abs__() < 1000:
+                        # If the number is a fraction
+                        if self.is_fraction(next_term) or (
+                                (next_term[len(next_term) - 1] == '%') and self.is_fraction(next_term[:-1])):
+
+                            flag = next_term[len(next_term) - 1] == '%'
+                            current_term = current_term + " " + next_term
+                            index = doc_test.find(' ')
+
+                            # If there are no more terms
+                            if not more_words:
+                                # Is just a number or percent like this 22 3/4%
+                                if flag:
+                                    new_doc.append(self.percentage_number_parsing(current_term))
+                                else:
+                                    new_doc.append(self.convert_number_to_wanted_state(current_term))
+                                return new_doc
+
+                            # If there are more terms
+                            more_words = index != -1
+                            if not more_words:
+                                next_term = doc_test
+                            else:
+                                next_term = doc_test[0:index]
+                            doc_test = doc_test[index + 1:]
+
+                            # If it's a price term
+                            lower = next_term.lower()
+                            if lower == 'dollars' or lower == 'dollar':
+                                current_term = current_term + " " + next_term
+                                new_doc.append(self.price_number_parsing(current_term))
+                                if not more_words:
+                                    return new_doc
+                                continue
+                            # If it's a percent term
+                            if lower == 'percent' or lower == 'percentage':
+                                current_term = current_term + " " + next_term
+                                new_doc.append(self.percentage_number_parsing(current_term))
+                                if not more_words:
+                                    return new_doc
+                                continue
+
+                        # This is an integer smaller than 1000 and without a fraction
+                        # We will check is it is a date
+                        if int(current_term) <= 31 and int(current_term) >= 1:
+                            if self.monthToNum(next_term.lower()) != None:
+                                current_term = current_term + " " + next_term
+                                # If there are no more terms
+                                if not more_words:
+                                    # It is a date like 20 March
+                                    new_doc.append(self.date(current_term))
+                                    return new_doc
+
+                                # If there are more terms
+                                more_words = index != -1
+                                if not more_words:
+                                    next_term = doc_test
+                                else:
+                                    next_term = doc_test[0:index]
+                                doc_test = doc_test[index + 1:]
+
+                                # Than it is a full date
+                                if self.is_integer(next_term) and int(next_term) <= 2500:
+                                    current_term = current_term + " " + next_term
+                                    new_doc.append(self.full_date(current_term))
+                                    if not more_words:
+                                        return new_doc
+
+                next_term = save_next_term
+                doc_test = save_doc
+                # The term is a number that is not an integer or that it's absolute value is not smaller than 1000 or not one of the checks above
+                hyphen_index = next_term.find('-')
+                flag = hyphen_index != -1 and self.is_number_describer(next_term[:hyphen_index])
+                if self.is_number_describer(next_term) or flag:
+                    current_term = current_term + " " + next_term
+
+                index = doc_test.find(' ')
+
+                # If the range is like 13 thousand-..
+                if flag:
+                    # If the range is like 13 thousand-34.7 ..
+                    if self.is_float(next_term[hyphen_index + 1:]):
+                        # If the range is like 13 thousand-34.7
+                        if not more_words:
+                            new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                            return new_doc
+
+                        # If there are more terms
+                        more_words = index != -1
+                        if not more_words:
+                            next_term = doc_test
+                        else:
+                            next_term = doc_test[0:index]
+                        doc_test = doc_test[index + 1:]
+
+                        # If the range is like 13 thousand-34.7 million
+                        if self.is_number_describer(next_term):
+                            current_term = current_term + next_term
+                            new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                        if not more_words:
+                            return new_doc
+                    else:
+                        new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                        if not more_words:
+                            return new_doc
+                        continue
+                else:
+                    # If there are no more terms it must ne a number
+                    if not more_words:
+                        new_doc.append(self.convert_number_to_wanted_state(current_term))
+                        return new_doc
+
+                    # If there are more terms
+                    more_words = index != -1
+                    if not more_words:
+                        next_term = doc_test
+                    else:
+                        next_term = doc_test[0:index]
+                    doc_test = doc_test[index + 1:]
+
+                    lower = next_term.lower()
+                    if lower == 'percent' or lower == 'percentage':
+                        current_term = current_term + " " + next_term
+                        new_doc.append(self.percentage_number_parsing(current_term))
+                        if not more_words:
+                            return new_doc
+                        continue
+
+                    if lower == 'dollar' or lower == 'dollars':
+                        current_term = current_term + " " + next_term
+                        new_doc.append(self.price_number_parsing(current_term))
+                        if not more_words:
+                            return new_doc
+                        continue
+
+                    if lower == 'u.s.':
+                        temp = next_term
+                        if not more_words:
+                            new_doc.append(self.convert_number_to_wanted_state(current_term))
+                            new_doc.append(next_term)
+                            return new_doc
+                        index = doc_test.find(' ')
+                        # If there are more terms
+                        more_words = index != -1
+                        if not more_words:
+                            next_term = doc_test
+                        else:
+                            next_term = doc_test[0:index]
+                        doc_test = doc_test[index + 1:]
+                        lower = next_term.lower()
+                        if lower == 'dollar' or lower == 'dollars':
+                            current_term = current_term + " " + temp + " " + next_term
+                            new_doc.append(self.price_number_parsing(current_term))
+                            if not more_words:
+                                return new_doc
+                            continue
+
+                    new_doc.append(self.convert_number_to_wanted_state(current_term))
+                    doc_test = next_term + " " + doc_test
+                    continue
+
+            # If the term is not an integer
+            # if the tern starts with $
+            if current_term[0] == '$':
+                if self.is_number_term(current_term[1:]):
+                    if current_term[len(current_term) - 1].lower() in ['k', 'm', 'b', 't', 'q']:
+                        new_doc.append(self.price_number_parsing(current_term))
+                        continue
+
+                    if not more_words:
+                        new_doc.append(self.price_number_parsing(current_term))
+                        return new_doc
+
+                    # If there are more terms
+                    more_words = index != -1
+                    if not more_words:
+                        next_term = doc_test
+                    else:
+                        next_term = doc_test[0:index]
+                    doc_test = doc_test[index + 1:]
+
+                    if self.is_number_describer(next_term):
+                        current_term = current_term + " " + next_term
+
+                    new_doc.append(self.price_number_parsing(current_term))
+                    if not more_words:
+                        return new_doc
+                    continue
+
+            if current_term.lower() == "between":
+
+                so_far = ''
+                if not more_words:
+                    new_doc.append(current_term)
+                    return new_doc
+
+                # If there are more terms
+                more_words = index != -1
+                if not more_words:
+                    next_term = doc_test
+                else:
+                    next_term = doc_test[0:index]
+                doc_test = doc_test[index + 1:]
+
+                so_far = next_term
+                if not self.is_number_term(next_term) or not more_words:
+                    if more_words:
+                        doc_test = so_far + " " + doc_test
+                    else:
+                        doc_test = so_far
+                    new_doc.append(current_term)
+                    continue
+
+                index = doc_test.find(' ')
+                # If there are more terms
+                more_words = index != -1
+                if not more_words:
+                    next_term = doc_test
+                else:
+                    next_term = doc_test[0:index]
+                doc_test = doc_test[index + 1:]
+
+                if self.is_number_describer(next_term):
+                    so_far = so_far + " " + next_term
+                    index = doc_test.find(' ')
+                    # If there are more terms
+                    more_words = index != -1
+                    if not more_words:
+                        next_term = doc_test
+                    else:
+                        next_term = doc_test[0:index]
+                    doc_test = doc_test[index + 1:]
+
+                so_far = so_far + " " + next_term
+                if next_term != "and" or not more_words:
+                    if more_words:
+                        doc_test = so_far + " " + doc_test
+                    else:
+                        doc_test = so_far
+                    new_doc.append(current_term)
+                    continue
+
+                index = doc_test.find(' ')
+                # If there are more terms
+                more_words = index != -1
+                if not more_words:
+                    next_term = doc_test
+                else:
+                    next_term = doc_test[0:index]
+                doc_test = doc_test[index + 1:]
+
+                so_far = so_far + " " + next_term
+                if not self.is_number_term(next_term):
+                    if more_words:
+                        doc_test = so_far + " " + doc_test
+                    else:
+                        doc_test = so_far
+                    new_doc.append(current_term)
+                    continue
+
+                if more_words:
+                    index = doc_test.find(' ')
+                    # If there are more terms
+                    more_words = index != -1
+                    if not more_words:
+                        next_term = doc_test
+                    else:
+                        next_term = doc_test[0:index]
+                    doc_test = doc_test[index + 1:]
+                    if self.is_number_describer(next_term):
+                        so_far = so_far + " " + next_term
+                    else:
+                        if more_words:
+                            doc_test = next_term + doc_test
+                        else:
+                            doc_test = next_term
+                        more_words = True
+
+
+                current_term = current_term + " " + so_far
+                new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                if not more_words:
+                    return new_doc
+                continue
+
+
+            if self.monthToNum(current_term.lower())!= None:
+                if not more_words:
+                    new_doc.append(next_term)
+                    return new_doc
+
+                index = doc_test.find(' ')
+                # If there are more terms
+                more_words = index != -1
+                if not more_words:
+                    next_term = doc_test
+                else:
+                    next_term = doc_test[0:index]
+                doc_test = doc_test[index + 1:]
+
+
+                flag1 = self.is_integer(next_term)
+                flag2 = self.is_integer_that_ends_with_th(next_term)
+                flag3 = self.is_integer_that_ends_with_th(next_term[:-1]) and next_term[len(next_term) - 1] == ','
+                flag4 = self.is_integer(next_term[:-1]) and next_term[len(next_term)-1] == ','
+                if flag2 or flag1 or flag3 or flag4:
+
+                    day = next_term
+                    flag = True
+
+                    if flag2:
+                        day = next_term[:-2]
+                    if flag3:
+                        day = next_term[:-3]
+                    if flag4:
+                        day = next_term[:-1]
+
+                    flag = int(day) <= 31 and int(day) >= 0
+                    current_term = current_term + " " + day
+                    if not flag or not more_words:
+                        new_doc.append(self.date(current_term))
+                        if not more_words:
+                            return new_doc
+                        continue
+
+                    index = doc_test.find(' ')
+                    # If there are more terms
+                    more_words = index != -1
+                    if not more_words:
+                        next_term = doc_test
+                    else:
+                        next_term = doc_test[0:index]
+                    doc_test = doc_test[index + 1:]
+
+                    if not self.is_integer(next_term):
+                        doc_test = next_term
+                        new_doc.append(self.full_date(current_term))
+
+                    current_term = current_term + " " + next_term
+                    new_doc.append(self.full_date(current_term))
+                    if not more_words:
+                        return new_doc
+                    continue
+
+            if self.is_date(current_term):
+                new_doc.append(self.full_date(current_term))
+                if not more_words:
+                    return new_doc
+                continue
+
+
+            if self.is_word_number(current_term):
+                if not more_words:
+                    new_doc = self.combine_lists(new_doc,self.range_term_parser(current_term))
+                    return new_doc
+
+                index = doc_test.find(' ')
+                # If there are more terms
+                more_words = index != -1
+                if not more_words:
+                    next_term = doc_test
+                else:
+                    next_term = doc_test[0:index]
+                doc_test = doc_test[index + 1:]
+
+                if self.is_number_describer(next_term):
+
+                    current_term = current_term + next_term
+                    new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                    if not more_words:
+                        return new_doc
+                    doc_test = next_term + " " +doc_test
+                    continue
+
+            number_of_hyphens = current_term.count('-')
+            # If it's word-word or word-word-word
+            if number_of_hyphens == 1 or number_of_hyphens == 2:
+                new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                if not more_words:
+                    return new_doc
+                continue
 
 
 
-#range_term = 'between 18.567 and 24.93475 Thousand'
-#end_of_ex = range_term[8:]
-#number1 = end_of_ex[:end_of_ex.find(' and')]
-#number2 = end_of_ex[end_of_ex.find(' and') + 5:]
-#print(number1)
-#print(number2)
-parser = Parser()
-print(parser.range_term_parser('between 1000 Million and guy'))
+            additional_word = additional_word +" " + current_term
+
+            if not more_words:  # Do while index != -1
+                break
+
+            index = doc_test.find(' ')
+            # If there are more terms
+            more_words = index != -1
+            doc_test = doc_test[index + 1:]
+
+        additional_word = additional_word[1:]
+        print(additional_word)
+        if index == -1 and len(additional_word) == 0:
+            return new_doc
+        print(additional_word)
+        return new_doc
+        # Remove stop words
+        # tokenize
+        # stem
+
+
+
+    def is_word_number(self,term):
+        number_of_hyphens = term.count('-')
+        if number_of_hyphens != 1:
+            return False
+        second = term[term.find('-')+1:]
+        return self.is_number_term(second)
+
+    def is_number(self,term):
+        index = term.find('.')
+        if index == len(term) - 1:
+            return False
+        temp = term
+        if index != -1:
+            temp = temp[:index]
+        import re
+        indices = [m.start() for m in re.finditer(',', temp)]
+        length = len(indices)
+        if length > 0:
+            if indices[length - 1] != len(temp) - 4:
+                return False
+            if indices[0] < 1 or indices[0] > 3:
+                return False
+            for i in range(0, length - 1):
+                if indices[i + 1] - indices[i] != 4:
+                    return False
+
+        temp = temp.replace(',', '')
+        if index != -1:
+            temp = temp + term[index:]
+        return self.is_float(temp)
+
+    def combine_lists(self,list1, list2):
+        for i in range(0, len(list1)):
+            list2.append(list1[i])
+        return list2
+
+    def is_number_term(self,term):
+        length = len(term)
+        term = term.lower()
+        if self.is_number(term):
+            return True
+        if term[length - 1] in ['k', 'm', 'b', 't', 'q']:
+            return self.is_number(term[:-1])
+        if term[-2:] == 'bn':
+            return self.is_number(term[:-2])
+        return False
+
+    def is_integer_that_ends_with_th(self,number):
+        return number[-2:].lower() == 'th' and self.is_integer(number[:-2])
+
+    def is_fraction(self,term):
+        index = term.find('/')
+        if index == -1:
+            return False
+        return self.is_float(term[:index]) and self.is_float(term[index + 1:])
+
+    def is_number_describer(self,word):
+        return word.lower() in ['thousand', 'thousands', 'million', 'millions', 'trillions', 'trillion', 'billion',
+                                'billions', 'quadrillion', 'quadrillion', 'bn']
+
+    def is_date(self,term):
+        num_of_slashes = term.count('/')
+        if num_of_slashes != 2:
+            return False
+        index = term.find('/')
+        first = term[:index]
+        rindex = term.rfind('/')
+        second = term[index + 1: rindex]
+        third = term[rindex+1:]
+
+        if not (self.is_integer(first) and self.is_integer(second) and self.is_integer(third)):
+            return False
+
+        first = int(first)
+        second = int(second)
+        if not (first >= 1 and second >= 1):
+            return False
+
+        return (first <= 31 and second <= 12) or (first <= 12 and second <= 31)
+
+
+
+
+
+x = Parser()
+print(x.parse_to_unique_terms('the dog was last seen on march 14th, 2019 between 5 and 10 pm'))
+

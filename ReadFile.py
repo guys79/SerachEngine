@@ -6,6 +6,7 @@ namesInDirectory=[]
 docsInFile=[]
 class justATest:
 
+    # a helper function that should find the name of the document
     def findTheName(self,content,firstLine):
         found1 = -1
         i = firstLine
@@ -19,27 +20,19 @@ class justATest:
         nameOfFile=myString[myString.find(start)+len(start)+1:myString.find(end)-1]
         return nameOfFile
 
-    def storeFiles(self, start, end,content,path):
-        try:
-            slesh = "A\H"
-            slesh = slesh[1]
-            myFile= open(os.path.join("allDocs", self.findTheName(content,start)), 'a+')
-        except IOError:
-            print("there has been a problem creating the file")
-        with myFile:
-            for i in range(start,end):
-                myFile.write(content[i])
-
+    # this function should get the name of the file and return arr of strings that contains the lines of the file
     def store_files(self, start, end,content):
         newArrey=[]
         for i in range(start, end+1):
             newArrey.append(content[i])
         tempArr=[self.findTheName(content,start),newArrey]
         self.docsInFile.append(tempArr)
-
+    # returns the next document in the the corpus directory
     def getFile(self):
+        # check if all docs have been returned
         if self.indexInDirectory==len(self.namesInDirectory):
             return "all docs are received"
+        # in case we have to create a new arrey out of a file that includes a lot of docs
         if self.indexInFile==len(self.docsInFile):
             self.docsInFile=[]
             for file in os.listdir(self.namesInDirectory[self.indexInDirectory]):
@@ -64,35 +57,16 @@ class justATest:
                 self.indexInDirectory = self.indexInDirectory + 1
             return self.docsInFile[self.indexInFile-1]
 
-    def __init__(self,path):
+    # we initilize the class
+    def _init_(self,path):
         self.indexInFile = 0
         self.indexInDirectory = 0
         self.namesInDirectory = []
         self.docsInFile = []
+        # initilazation of the namesInDirectory arrey
         for filename in os.listdir(path):
             slesh="A\H"
             slesh=slesh[1]
             filename=path+slesh+filename
             self.namesInDirectory.append(filename)
         return
-
-x= justATest("C:\Users\owner\Desktop\pest")
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-print(x.getFile())
-
