@@ -15,23 +15,20 @@ class Parser:
 
     # This function will convert the number term to the wanted state as stated in the assignment
     def convert_number_to_wanted_state(self,term):
-        try:
-            num = self.parseNumber(term)
-            if '/' in str(num):
-                return num
-            if num < 1000:
-                return self.curve_around_the_edges(num)
-            if num < 1000 ** 2:
-                return "%s%s" % (self.curve_around_the_edges(num /1000),'K')
-            if num < 1000 ** 3:
-                return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 2)),'M')
-            #if num < 1000 ** 4:
-            return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 3)),'B')
-            #if num < 1000 ** 5:
-            #    return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 4)),'T')
-           # return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 5)),'Q')
-        except Exception:
-            return None
+        num = self.parseNumber(term)
+        if '/' in str(num):
+            return num
+        if num < 1000:
+            return self.curve_around_the_edges(num)
+        if num < 1000 ** 2:
+            return "%s%s" % (self.curve_around_the_edges(num /1000),'K')
+        if num < 1000 ** 3:
+            return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 2)),'M')
+        #if num < 1000 ** 4:
+        return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 3)),'B')
+        #if num < 1000 ** 5:
+        #    return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 4)),'T')
+       # return "%s%s" % (self.curve_around_the_edges(num /(1000 ** 5)),'Q')
 
     # This function will change numbers like 180.000 to 180
     def curve_around_the_edges(self,number):
@@ -203,20 +200,24 @@ class Parser:
 
 
     def monthToNum(self,NameOfMonth):
-        return {
-            'jan': 1,'feb': 2,'mar': 3,'apr': 4,'may': 5,'jun': 6,'jul': 7,'aug': 8,'sep': 9,'oct': 10,'nov': 11,'dec': 12,
-            'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12
-        }[NameOfMonth]
-
+        try:
+            return {
+                'jan': 1,'feb': 2,'mar': 3,'apr': 4,'may': 5,'jun': 6,'jul': 7,'aug': 8,'sep': 9,'oct': 10,'nov': 11,'dec': 12,
+                'january': 1,'february': 2,'march': 3,'april': 4,'may': 5,'june': 6,'july': 7,'august': 8,'september': 9,'october': 10,'november': 11,'december': 12
+            }[NameOfMonth]
+        except:
+            return ("it is not a month")
     def date(self,term):
         term = term.lower()
         newTerm = term.split(' ')
         if self.is_integer(newTerm[0]):
             month = self.monthToNum(newTerm[1])
+            if month=="it is not a month":
+                return month
             day = newTerm[0]
         else:
             month = self.monthToNum(newTerm[0])
-            day = newTerm[1]
+            day=newTerm[1]
         month = str(month)
         if len(month) < 2:
             month = "0" + month
@@ -233,57 +234,59 @@ class Parser:
         except Exception:
             return False
 
-    def is_integer(self,number):
-        try:
-            float(number)
-            return True
-        except Exception:
-            return False
+    def full_date(self,term):
+        if "/" in term:
+            newTerm=term.split("/")
+            if self.is_integer(newTerm[0])==False or self.is_integer(newTerm[1])==False or self.is_integer(newTerm[2])==False:
+                return "wrong string"
+            if (newTerm[0]>12 or newTerm[1]>12) and len(newTerm[2])>1:
+                if int(newTerm[1])>12:
+                    temp = newTerm[1]
+                    newTerm[1] = newTerm[0]
+                    newTerm[0] = temp
+                if len(newTerm[1])==1:
+                    newTerm[1]="0"+newTerm[1]
+                arrayOfDates=[]
+                day=newTerm[0]
+                month=newTerm[1]
+                year=newTerm[2]
+                if len(year)>2:
+                    arrayOfDates.append(year)
+                    if len(year)==3:
+                        year=year[1:]
+                    else:
+                        year=year[2:]
+                arrayOfDates.append(day+"-"+month+"-"+year)
+                arrayOfDates.append(day+"-"+month)
+                return arrayOfDates
 
-    # This function will get a range parameter and will parse it
-    def range_term_parser(self,range_term):
-        # number of - in the term
-        number_of_hyphens = range_term.count('-')
-
-        # If the term is word-word-word
-        if number_of_hyphens == 2:
-            return range_term
-
-        first_half = ''
-        second_half = ''
-        # if the term is 'Between number and number'
-        if number_of_hyphens == 0:
-            end_of_ex = range_term[8:]
-            index = end_of_ex.find(' and')
-            first_half = end_of_ex[ : index]
-            second_half = end_of_ex[end_of_ex.find(' and') + 5:]
-        # if the term is word-word or word-number or number-word or number-number
-        elif number_of_hyphens == 1:
-            index = range_term.find('-')
-            first_half = range_term[:index]
-            second_half = range_term[index + 1:]
-
-        list_to_return = []
-        temp = self.convert_number_to_wanted_state(first_half)
-        if temp != None:
-            first_half = temp
-            list_to_return.append(first_half)
-
-        temp = self.convert_number_to_wanted_state(second_half)
-        if temp != None:
-            second_half = temp
-            list_to_return.append(second_half)
-        list_to_return.append('%s-%s' % (first_half,second_half))
-        return list_to_return
+            return"not possible"
+        else:
+            term = term.lower()
+            term=term.replace("th","")
+            term=term.replace(",", "")
+            newTerm = term.split(' ')
+            if len(newTerm)<3:
+                return "not possible"
+            if self.is_integer(newTerm[1]):
+                temp=newTerm[1]
+                newTerm[1]=newTerm[0]
+                newTerm[0]=temp
+            day=self.date(newTerm[0]+" "+newTerm[1])
+            if day=="it is not a month":
+                return "it is not a month"
+            year = self.date(newTerm[1] +" "+ newTerm[2])
+            day=day[3:]
+            year=year.split("-")
+            month=year[1]
+            year=year[0]
+            return day+"-"+month+"-"+year
 
 
 
 
-#range_term = 'between 18.567 and 24.93475 Thousand'
-#end_of_ex = range_term[8:]
-#number1 = end_of_ex[:end_of_ex.find(' and')]
-#number2 = end_of_ex[end_of_ex.find(' and') + 5:]
-#print(number1)
-#print(number2)
-parser = Parser()
-print(parser.range_term_parser('between 1000 Million and guy'))
+
+
+
+x= Parser()
+print(x.full_date("March 14th, 2016"))
