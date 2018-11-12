@@ -1,10 +1,21 @@
+from StopWordsHolder import *
+from string import *
+from nltk.stem import PorterStemmer
 class Parser:
     hash_of_words = None
-
+    stopWordsHolder = None
+    porter_stemmer = None
     # The constructor of the class
     def __init__(self):
         self.hash_of_words = {}# Maybe add a function that reads a data from a file (if we have already parsed before)
-        return
+        self.stopWordsHolder = StopWordsHolder()
+        self.porter_stemmer = PorterStemmer()
+
+    def scan_list_of_word(self,list_words):
+        dictionary = {}
+        for i in range(0,len(list_words)):
+            self.word_scan(list_words[i],dictionary)
+        return dictionary
 
     # This function will convert the number term to the wanted state as stated in the assignment
     def convert_number_to_wanted_state(self,term):
@@ -137,23 +148,25 @@ class Parser:
         return self.number_case_handler(new_number)
 
     # This function will handle a word regard to small and big letters and adds the word the the dictionary
-    def word_scan(self,word):
+    def word_scan(self,word,dictionary):
+        flag = len(word) > 0 and word[0] >= 'A' and word[0] <= 'Z'
+        word = self.porter_stemmer.stem(word)
         upper_word = word.upper()
         numer_of_app = 0
-        if len(word)>0 and word[0]>='A' and word[0]<='Z':
-            if upper_word in self.hash_of_words:
-                numer_of_app = self.hash_of_words[upper_word]
-            self.hash_of_words[upper_word] = numer_of_app + 1
+        if flag:
+            if upper_word in dictionary:
+                numer_of_app = dictionary[upper_word]
+            dictionary[upper_word] = numer_of_app + 1
         elif len(word)>0 and word[0]>='a' and word[0]<='z':
             lower_word = word.lower()
-            if lower_word in self.hash_of_words:
-                numer_of_app = self.hash_of_words[lower_word]
-            elif upper_word in self.hash_of_words:
-                numer_of_app = self.hash_of_words[upper_word]
-                del self.hash_of_words[upper_word]
-            self.hash_of_words[lower_word] = numer_of_app + 1
+            if lower_word in dictionary:
+                numer_of_app = dictionary[lower_word]
+            elif upper_word in dictionary:
+                numer_of_app = dictionary[upper_word]
+                del dictionary[upper_word]
+            dictionary[lower_word] = numer_of_app + 1
         else:
-            self.hash_of_words[upper_word] = numer_of_app + 1
+            dictionary[upper_word] = numer_of_app + 1
 
     # This function will parse the percentage term
     def percentage_number_parsing(self, percent_term):
@@ -342,10 +355,15 @@ class Parser:
         index_saver = index
         additional_word = ''
         doc_test = ' '.join(doc_test.split())
+        exclude = set(punctuation)
+        exclude.remove('/')
+        exclude.remove('-')
+        doc_test = ''.join(ch for ch in doc_test if ch not in exclude)
         # Do while index != -1
         while True:
 
             print("doc_test = %s" % doc_test)
+            print("new_doc = %s" % new_doc)
             index = doc_test.find(' ')
             more_words = index != -1
             # Get the current term and it's length, shorten the doc and find the next space
@@ -460,7 +478,6 @@ class Parser:
                     current_term = current_term + " " + next_term
 
                 index = doc_test.find(' ')
-
                 # If the range is like 13 thousand-..
                 if flag:
                     # If the range is like 13 thousand-34.7 ..
@@ -479,8 +496,9 @@ class Parser:
                         doc_test = doc_test[index + 1:]
 
                         # If the range is like 13 thousand-34.7 million
-                        if self.is_number_describer(next_term):
-                            current_term = current_term + next_term
+
+                        if self.is_number_describer(next_term) or self.is_fraction(next_term):
+                            current_term = current_term +" "+ next_term
                             new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
                             if not more_words:
                                 break
@@ -494,7 +512,7 @@ class Parser:
                             break
                         continue
                 else:
-                    # If there are no more terms it must ne a number
+                    # If there are no more terms it must be a number
                     if not more_words:
                         new_doc.append(self.convert_number_to_wanted_state(current_term))
                         break
@@ -752,12 +770,11 @@ class Parser:
                     next_term = doc_test[0:index]
                 doc_test = doc_test[index + 1:]
 
-                if self.is_number_describer(next_term):
-                    current_term = current_term + next_term
+                if self.is_number_describer(next_term) or self.is_fraction(next_term):
+                    current_term = current_term + " "+ next_term
                     new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
                     if not more_words:
                        break
-                    doc_test = next_term + " " +doc_test
                     continue
 
                 doc_test = next_term +" " + doc_test
@@ -780,17 +797,26 @@ class Parser:
 
 
         additional_word = additional_word[1:]
-        print(additional_word)
         if index == -1 and len(additional_word) == 0:
             return new_doc
 
+        # Remove stop words anf punctuations
+        additional_word = ''.join(ch for ch in additional_word if ch not in ['-','/'])
+        additional_word = self.remove_stop_words(additional_word)
+
+        dictionary = self.scan_list_of_word(additional_word)
+        print dictionary
+        # need to combine the dictionary and the new_doc (also need to maje the new doc a dictionary with a counter)
         return new_doc
-        # Remove stop words
-        # tokenize
-        # stem
 
 
 
+    def add_to_dictionary(self):
+        return
+    def remove_stop_words(self,words):
+        words = words.split()
+        result = [word for word in words if not self.stopWordsHolder.is_stop_word(word)]
+        return result
     def is_word_number(self,term):
         number_of_hyphens = term.count('-')
         if number_of_hyphens != 1:
@@ -876,9 +902,7 @@ class Parser:
 
 
 x = Parser()
-ans = 'guy     is th   kis    ss  s      s sss    s s   s s s  s ss       s'
-print ' '.join('guy     is th   kis    ss  s      s sss    s s   s s s  s ss       s'.split())
-print(x.parse_to_unique_terms('This iphone costs me 20000K-750T Dollars and I  am 67 thousand-13.4 million on the 14-guy friday'))
+print(x.parse_to_unique_terms('What is the question? guy is, great not guys'))
 # check 14-3 3/4
 # or word-3 3/4
 
