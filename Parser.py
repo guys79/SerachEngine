@@ -150,7 +150,7 @@ class Parser:
     # This function will handle a word regard to small and big letters and adds the word the the dictionary
     def word_scan(self,word,dictionary):
         flag = len(word) > 0 and word[0] >= 'A' and word[0] <= 'Z'
-        word = self.porter_stemmer.stem(word)
+        word = self.porter_stemmer.stem(word).encode("ascii")
         upper_word = word.upper()
         numer_of_app = 0
         if flag:
@@ -165,6 +165,7 @@ class Parser:
                 numer_of_app = dictionary[upper_word]
                 del dictionary[upper_word]
             dictionary[lower_word] = numer_of_app + 1
+
         else:
             dictionary[upper_word] = numer_of_app + 1
 
@@ -266,8 +267,13 @@ class Parser:
         if number_of_hyphens == 0:
             end_of_ex = range_term[8:]
             index = end_of_ex.find(' and')
-            first_half = end_of_ex[ : index]
-            second_half = end_of_ex[end_of_ex.find(' and') + 5:]
+            if index == -1:
+                index = end_of_ex.find(' to')
+                first_half = end_of_ex[: index]
+                second_half = end_of_ex[end_of_ex.find(' to') + 4:]
+            else:
+                first_half = end_of_ex[: index]
+                second_half = end_of_ex[end_of_ex.find(' and') + 5:]
 
         # if the term is word-word or word-number or number-word or number-number
         elif number_of_hyphens == 1:
@@ -639,14 +645,15 @@ class Parser:
                     doc_test = doc_test[index + 1:]
 
                 so_far = so_far + " " + next_term
-                if next_term != "and" or not more_words:
+                print next_term
+                if (next_term.lower() != "and" and next_term.lower() != "to") or not more_words:
                     if more_words:
                         doc_test = so_far + " " + doc_test
                     else:
                         doc_test = so_far
                     new_doc.append(current_term)
                     continue
-
+                print next_term
                 index = doc_test.find(' ')
                 # If there are more terms
                 more_words = index != -1
@@ -797,22 +804,27 @@ class Parser:
 
 
         additional_word = additional_word[1:]
-        if index == -1 and len(additional_word) == 0:
-            return new_doc
-
+        print additional_word
         # Remove stop words anf punctuations
         additional_word = ''.join(ch for ch in additional_word if ch not in ['-','/'])
         additional_word = self.remove_stop_words(additional_word)
+        print additional_word
 
         dictionary = self.scan_list_of_word(additional_word)
         print dictionary
+        self.add_list_of_terms_to_dictionary(new_doc,dictionary)
         # need to combine the dictionary and the new_doc (also need to maje the new doc a dictionary with a counter)
-        return new_doc
+        return dictionary
 
 
-
-    def add_to_dictionary(self):
-        return
+    def add_list_of_terms_to_dictionary(self,list_of_terms,dictionary):
+        for i in range(0,len(list_of_terms)):
+            self.add_to_dictionary(dictionary,list_of_terms[i])
+    def add_to_dictionary(self,dictionary,term):
+        if term in dictionary:
+            dictionary[term] = dictionary[term] + 1
+        else:
+            dictionary[term] = 1
     def remove_stop_words(self,words):
         words = words.split()
         result = [word for word in words if not self.stopWordsHolder.is_stop_word(word)]
@@ -902,7 +914,7 @@ class Parser:
 
 
 x = Parser()
-print(x.parse_to_unique_terms('What is the question? guy is, great not guys'))
+print(x.parse_to_unique_terms('Adiel and Guy are walking in the street between 5 and 10 pm'))
 # check 14-3 3/4
 # or word-3 3/4
 
