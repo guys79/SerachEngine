@@ -1,10 +1,13 @@
 import os
-my_dict = {}
-indexInFile=0
-indexInDirectory=0
-namesInDirectory=[]
-docsInFile=[]
-class justATest:
+
+class ReadFile:
+    my_dict = {}
+    indexInFile = 0 # The index in the docsInFile list
+    indexInDirectory = 0 # The index of the namesInDirectory list
+    namesInDirectory = [] # The paths of all the files in the corpus
+    docsInFile = [] # In every cell in there is a number and a list. The number is the docId and the list is the content of the file
+    doc_id_generator = 1 #The counter of the document, the counter is the docId vlue
+    dictionary_doc_name_id = {} # A dictionary, The key is the name of the doc, and the value is the dicId
 
     # a helper function that should find the name of the document
     def findTheName(self,content,firstLine):
@@ -25,10 +28,15 @@ class justATest:
         newArrey=[]
         for i in range(start, end+1):
             newArrey.append(content[i])
-        tempArr=[self.findTheName(content,start),newArrey]
+
+        name = self.findTheName(content,start)
+        tempArr=[self.doc_id_generator,newArrey]
+        self.dictionary_doc_name_id[name] = self.doc_id_generator
+        self.doc_id_generator = self.doc_id_generator + 1
         self.docsInFile.append(tempArr)
     # returns the next document in the the corpus directory
     def getFile(self):
+
         # check if all docs have been returned
         if self.indexInDirectory==len(self.namesInDirectory):
             return "all docs are received"
@@ -58,7 +66,7 @@ class justATest:
             return self.docsInFile[self.indexInFile-1]
 
     # we initilize the class
-    def _init_(self,path):
+    def __init__(self,path):
         self.indexInFile = 0
         self.indexInDirectory = 0
         self.namesInDirectory = []
@@ -70,3 +78,13 @@ class justATest:
             filename=path+slesh+filename
             self.namesInDirectory.append(filename)
         return
+
+
+
+x = ReadFile('C:\Users\guys7\Downloads\corpus')
+
+while True:
+    p =x.getFile()
+    if p == "all docs are received":
+        break
+
