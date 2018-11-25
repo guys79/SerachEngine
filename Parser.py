@@ -1,5 +1,6 @@
 from StopWordsHolder import *
 from string import *
+import math
 from nltk.stem import PorterStemmer
 class Parser:
 
@@ -319,57 +320,69 @@ class Parser:
     def parse_doc(self,doc_text):
         temp_text = doc_text
 
-    # this function should return DD-MM-YY format for all the formats of how to write full date
-    def full_date(self,term):
-        # we check if the date is from the from of dd/mm/yy
-        if "/" in term:
-            newTerm = term.split("/")
-            # we check correction
-            if self.is_integer(newTerm[0]) == False or self.is_integer(newTerm[1]) == False or self.is_integer(newTerm[2]) == False:
-                return "wrong string"
-            # we check if we can identify if the string id dd/mm/yy or mm/dd/yy
-            if (newTerm[0] > 12 or newTerm[1]>12) and len(newTerm[2]) > 1:
-                if int(newTerm[1])>12:
+        # this function should return DD-MM-YY format for all the formats of how to write full date
+        def full_date(self, term):
+            # we check if the date is from the from of dd/mm/yy
+            if "/" in term:
+                newTerm = term.split("/")
+                # we check correction
+                if self.is_integer(newTerm[0]) == False or self.is_integer(newTerm[1]) == False or self.is_integer(
+                        newTerm[2]) == False:
+                    return term
+                # we check if we can identify if the string id dd/mm/yy or mm/dd/yy
+                if (newTerm[0] > 12 or newTerm[1] > 12) and len(newTerm[2]) > 1:
+                    if int(newTerm[1]) > 12:
+                        temp = newTerm[1]
+                        newTerm[1] = newTerm[0]
+                        newTerm[0] = temp
+                    if len(newTerm[1]) == 1:
+                        newTerm[1] = "0" + newTerm[1]
+                    arrayOfDates = []
+                    day = newTerm[0]
+                    month = newTerm[1]
+                    year = newTerm[2]
+                    if len(year) > 2:
+                        arrayOfDates.append(year)
+                        if len(year) == 3:
+                            year = year[1:]
+                        else:
+                            year = year[2:]
+                    arrayOfDates.append(day + "-" + month + "-" + year)
+                    arrayOfDates.append(day + "-" + month)
+                    return arrayOfDates
+                return term
+            # we check if the format is written in words
+            else:
+                val = term
+                term = term.lower()
+                term = term.replace("th", "")
+                term = term.replace(",", "")
+                newTerm = term.split(' ')
+                if len(newTerm) < 3:
+                    return val
+                if self.is_integer(newTerm[1]):
                     temp = newTerm[1]
                     newTerm[1] = newTerm[0]
                     newTerm[0] = temp
-                if len(newTerm[1]) == 1:
-                    newTerm[1] = "0" + newTerm[1]
+                day = self.date(newTerm[0] + " " + newTerm[1])
+                if day == "it is not a month":
+                    return val
+                year = self.date(newTerm[1] + " " + newTerm[2])
+                day = day[3:]
+                year = year.split("-")
+                month = year[1]
+                year = year[0]
                 arrayOfDates = []
-                day=newTerm[0]
-                month=newTerm[1]
-                year=newTerm[2]
-                if len(year)>2:
+                if len(year) > 2:
                     arrayOfDates.append(year)
-                    if len(year)==3:
-                        year=year[1:]
+                    if len(year) == 3:
+                        year = year[1:]
                     else:
-                        year=year[2:]
-                arrayOfDates.append(day+"-"+month+"-"+year)
-                arrayOfDates.append(day+"-"+month)
+                        year = year[2:]
+                arrayOfDates.append(day + "-" + month + "-" + year)
+                arrayOfDates.append(day + "-" + month)
                 return arrayOfDates
-            return "not possible"
-        # we check if the format is written in words
-        else:
-            term = term.lower()
-            term = term.replace("th","")
-            term = term.replace(",", "")
-            newTerm = term.split(' ')
-            if len(newTerm)<3:
-                return "not possible"
-            if self.is_integer(newTerm[1]):
-                temp = newTerm[1]
-                newTerm[1]=newTerm[0]
-                newTerm[0]=temp
-            day = self.date(newTerm[0]+" "+newTerm[1])
-            if day == "it is not a month":
-                return "it is not a month"
-            year = self.date(newTerm[1] +" "+ newTerm[2])
-            day = day[3:]
-            year = year.split("-")
-            month = year[1]
-            year = year[0]
-            return day + "-" + month + "-" + year
+                return day + "-" + month + "-" + year
 
     # This is the mother of all functions.
     # The function will get a text as a long string and will return 3 parameters:
@@ -934,7 +947,119 @@ class Parser:
 
         return (first <= 31 and second <= 12) or (first <= 12 and second <= 31)
 
+        # this function should return the begining of a weigth. for example:13kg return 2
+        def find_the_letter(self, weith):
+            place = len(weith)
+            weith = weith.lower()
+            if weith.find('a') != -1 and weith.find('a') < place:
+                place = weith.find('a')
+            if weith.find('b') != -1 and weith.find('b') < place:
+                place = weith.find('b')
+            if weith.find('c') != -1 and weith.find('c') < place:
+                place = weith.find('c')
+            if weith.find('d') != -1 and weith.find('d') < place:
+                place = weith.find('d')
+            if weith.find('e') != -1 and weith.find('e') < place:
+                place = weith.find('e')
+            if weith.find('f') != -1 and weith.find('f') < place:
+                place = weith.find('f')
+            if weith.find('g') != -1 and weith.find('g') < place:
+                place = weith.find('g')
+            if weith.find('h') != -1 and weith.find('h') < place:
+                place = weith.find('h')
+            if weith.find('i') != -1 and weith.find('i') < place:
+                place = weith.find('i')
+            if weith.find('j') != -1 and weith.find('j') < place:
+                place = weith.find('j')
+            if weith.find('k') != -1 and weith.find('k') < place:
+                place = weith.find('k')
+            if weith.find('l') != -1 and weith.find('l') < place:
+                place = weith.find('l')
+            if weith.find('m') != -1 and weith.find('m') < place:
+                place = weith.find('m')
+            if weith.find('n') != -1 and weith.find('n') < place:
+                place = weith.find('n')
+            if weith.find('o') != -1 and weith.find('o') < place:
+                place = weith.find('o')
+            if weith.find('p') != -1 and weith.find('p') < place:
+                place = weith.find('p')
+            if weith.find('q') != -1 and weith.find('q') < place:
+                place = weith.find('q')
+            if weith.find('r') != -1 and weith.find('r') < place:
+                place = weith.find('r')
+            if weith.find('s') != -1 and weith.find('s') < place:
+                place = weith.find('s')
+            if weith.find('t') != -1 and weith.find('t') < place:
+                place = weith.find('t')
+            if weith.find('u') != -1 and weith.find('u') < place:
+                place = weith.find('u')
+            if weith.find('v') != -1 and weith.find('v') < place:
+                place = weith.find('v')
+            if weith.find('w') != -1 and weith.find('w') < place:
+                place = weith.find('w')
+            if weith.find('x') != -1 and weith.find('x') < place:
+                place = weith.find('x')
+            if weith.find('y') != -1 and weith.find('y') < place:
+                place = weith.find('y')
+            if weith.find('z') != -1 and weith.find('z') < place:
+                place = weith.find('z')
+            return place
 
+        # this function shoud give us the number that we neet to mult in in order to get kg
+        def how_much_to_mult_for_kg(self, term):
+            if term == "gram" or term == "g":
+                return math.pow(10, - 3)
+            if term == "decagram" or term == "dag":
+                return math.pow(10, 1 - 3)
+            if term == "hectogram" or term == "hg":
+                return math.pow(10, 2 - 3)
+            if term == "kilogram" or term == "kg":
+                return math.pow(10, 3 - 3)
+            if term == "tonne":
+                return math.pow(10, 6 - 3)
+            if term == "decigram" or term == "dg":
+                return math.pow(10, -1 - 3)
+            if term == "centigram" or term == "cg":
+                return math.pow(10, -2 - 3)
+            if term == "milligram" or term == "mg":
+                return math.pow(10, -3 - 3)
+
+        # convert any measer unit into kg
+        def convert_to_kg(self, weigth):
+            weigth = self.convert_to_degit_num(weigth)
+            place = int(self.find_the_letter(weigth))
+            num = weigth[0:place]
+            measure_unit = weigth[place:]
+            if num == "":
+                return measure_unit
+            measure_unit = measure_unit.lower()
+            measure_unit = self.how_much_to_mult_for_kg(measure_unit)
+            num = float(num)
+            measure_unit = float(measure_unit)
+            num = num * measure_unit
+            return str(num) + " " + "kg"
+
+        def is_string(self, str):
+            try:
+                str = str + ''
+            except:
+                return False
+            return True
+
+        # if we get 200 handred kg it will return 20000.0kg
+        def convert_to_degit_num(self, str):
+            arrStr = str.split()
+            if len(arrStr) == 3:
+                arrStr = [(self.parseNumber(arrStr[0] + " " + arrStr[1])), arrStr[2]]
+            if len(arrStr) == 2:
+                x = arrStr[0]
+                if self.is_string(x):
+                    x = arrStr[0]
+                else:
+                    x = "%d" % x
+                weigt = x + (arrStr[1])
+                return weigt
+            return str
 
 
 
