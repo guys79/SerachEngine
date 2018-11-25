@@ -2,16 +2,16 @@ from StopWordsHolder import *
 from string import *
 from nltk.stem import PorterStemmer
 class Parser:
-    hash_of_words = None
+
     stopWordsHolder = None
     porter_stemmer = None
 
     # The constructor of the class
     def __init__(self):
-        self.hash_of_words = {}# Maybe add a function that reads a data from a file (if we have already parsed before)
         self.stopWordsHolder = StopWordsHolder()
         self.porter_stemmer = PorterStemmer()
 
+    # Adding a list of words to the dictionary
     def scan_list_of_word(self,list_words):
         dictionary = {}
         for i in range(0,len(list_words)):
@@ -52,21 +52,25 @@ class Parser:
             num_in_string = num_in_string[:-1]
         return num_in_string
 
-    def max_frequency(self,dictionary, new_doc):
+    # This function will return the maximum frequency of a certain ter in two dictionaries
+    def max_frequency(self,dictionary, dictionary_of_unique_terms):
         max_freq = 0
+        # For the first dictioanary
         for key in dictionary:
             if max_freq < dictionary[key]:
                 max_freq = dictionary[key]
-        for key in new_doc:
-            if max_freq < new_doc[key]:
-                max_freq = new_doc[key]
+        for key in dictionary_of_unique_terms:
+            if max_freq < dictionary_of_unique_terms[key]:
+                max_freq = dictionary_of_unique_terms[key]
         return max_freq
 
-    def add_to_term_dic(self,new_doc,key):
-        if key in new_doc:
-            new_doc[key] = new_doc[key] + 1
+    # This function ill add a term to the dictionary
+    def add_to_term_dic(self,dictionary_of_unique_terms,key):
+        if key in dictionary_of_unique_terms:
+            dictionary_of_unique_terms[key] = dictionary_of_unique_terms[key] + 1
             return
-        new_doc[key] = 1
+        dictionary_of_unique_terms[key] = 1
+
     # This function will return a number after being parsed
     def parseNumber(self,term):
         kind = self.numberKind(term)
@@ -151,6 +155,7 @@ class Parser:
     def number_of_commas(self,term):
         return term.count(',')
 
+    # This function removes anything that is not a digit or , or . from the string
     def number_without_extra_content(self,number):
         new_number = ''
         i = 0
@@ -158,7 +163,6 @@ class Parser:
         while i < length and ((number[i] >= '0' and number[i] <= '9') or number[i] == ',' or number[i] == '.'):
             new_number = new_number + number[i]
             i = i + 1
-
         return self.number_case_handler(new_number)
 
     # This function will handle a word regard to small and big letters and adds the word the the dictionary
@@ -221,7 +225,7 @@ class Parser:
             return "%s M %s" % (self.curve_around_the_edges(num / (1000 ** 2)), term_fo_dollars)
         return "%s %s" % (self.curve_around_the_edges(num), term_fo_dollars)
 
-
+    # This function will return the number of the given month term
     def monthToNum(self,NameOfMonth):
         try:
             return {
@@ -252,6 +256,7 @@ class Parser:
             return month + "-" + day
         return day + "-" + month
 
+    # This function will return True if the string is an integer
     def is_integer(self,number):
         try:
             int(number)
@@ -259,6 +264,7 @@ class Parser:
         except Exception:
             return False
 
+    # This function will return True if the string is a float
     def is_float(self,number):
         try:
             float(number)
@@ -365,35 +371,40 @@ class Parser:
             year = year[0]
             return day + "-" + month + "-" + year
 
-    def parse_to_unique_terms(self,doc_test):
+    # This is the mother of all functions.
+    # The function will get a text as a long string and will return 3 parameters:
+    # First dictionary - The dictionary of all the words in the text.
+    # Second dictionary - The dictionary with all the unique terms
+    # Max frequency - The frequency of the term that appear most number of times in the text
+    def parse_to_unique_terms(self,text):
         index = -1  # The index of the current closest space
-        new_doc = {}  # The new doc
+        dictionary_of_unique_terms = {}  # The new doc
         current_term = ''  # The current term
         next_term = ''  # The next term
         more_words = index != -1
-        save_doc = doc_test
+        save_doc = text
         index_saver = index
         additional_word = ''
-        doc_test = ' '.join(doc_test.split())
+        text = ' '.join(text.split())
         exclude = set(punctuation)
         exclude.remove('/')
         exclude.remove('-')
-        doc_test = ''.join(ch for ch in doc_test if ch not in exclude)
+        text = ''.join(ch for ch in text if ch not in exclude)
         # Do while index != -1
         while True:
 
-            print("doc_test = %s" % doc_test)
-            print("new_doc = %s" % new_doc)
-            index = doc_test.find(' ')
+            #print("text = %s" % text)
+            #print("dictionary_of_unique_terms = %s" % dictionary_of_unique_terms)
+            index = text.find(' ')
             more_words = index != -1
             # Get the current term and it's length, shorten the doc and find the next space
             if not more_words:
-                current_term = doc_test
+                current_term = text
             else:
-                current_term = doc_test[0:index]
+                current_term = text[0:index]
 
-            doc_test = doc_test[index + 1:]
-            index = doc_test.find(' ')
+            text = text[index + 1:]
+            index = text.find(' ')
             length = len(current_term)
             if length == 0:
                 continue
@@ -404,19 +415,19 @@ class Parser:
                 # If there are no more terms
                 if not more_words:
                     # Is just a number
-                    self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
-                    return new_doc
+                    self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
+                    return {},dictionary_of_unique_terms,self.max_frequency({},dictionary_of_unique_terms)
 
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
-                    next_term = doc_test
+                    next_term = text
                 else:
-                    next_term = doc_test[0:index]
-                doc_test = doc_test[index + 1:]
+                    next_term = text[0:index]
+                text = text[index + 1:]
 
                 save_next_term = next_term
-                save_doc = doc_test
+                save_doc = text
                 # If the term is an integer
                 if self.is_integer(current_term):
                     if int(current_term).__abs__() < 1000:
@@ -426,37 +437,37 @@ class Parser:
 
                             flag = next_term[len(next_term) - 1] == '%'
                             current_term = current_term + " " + next_term
-                            index = doc_test.find(' ')
+                            index = text.find(' ')
 
                             # If there are no more terms
                             if not more_words:
                                 # Is just a number or percent like this 22 3/4%
                                 if flag:
-                                    self.add_to_term_dic(new_doc,self.percentage_number_parsing(current_term))
+                                    self.add_to_term_dic(dictionary_of_unique_terms,self.percentage_number_parsing(current_term))
                                 else:
-                                    self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
+                                    self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
                                 break
 
                             # If there are more terms
                             more_words = index != -1
                             if not more_words:
-                                next_term = doc_test
+                                next_term = text
                             else:
-                                next_term = doc_test[0:index]
-                            doc_test = doc_test[index + 1:]
+                                next_term = text[0:index]
+                            text = text[index + 1:]
 
                             # If it's a price term
                             lower = next_term.lower()
                             if lower == 'dollars' or lower == 'dollar':
                                 current_term = current_term + " " + next_term
-                                self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
+                                self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
                                 if not more_words:
                                     break
                                 continue
                             # If it's a percent term
                             if lower == 'percent' or lower == 'percentage':
                                 current_term = current_term + " " + next_term
-                                self.add_to_term_dic(new_doc,self.percentage_number_parsing(current_term))
+                                self.add_to_term_dic(dictionary_of_unique_terms,self.percentage_number_parsing(current_term))
                                 if not more_words:
                                     break
                                 continue
@@ -469,22 +480,22 @@ class Parser:
                                 # If there are no more terms
                                 if not more_words:
                                     # It is a date like 20 March
-                                    self.add_to_term_dic(new_doc,self.date(current_term))
+                                    self.add_to_term_dic(dictionary_of_unique_terms,self.date(current_term))
                                     break
 
-                                index = doc_test.find(' ')
+                                index = text.find(' ')
                                 # If there are more terms
                                 more_words = index != -1
                                 if not more_words:
-                                    next_term = doc_test
+                                    next_term = text
                                 else:
-                                    next_term = doc_test[0:index]
-                                doc_test = doc_test[index + 1:]
+                                    next_term = text[0:index]
+                                text = text[index + 1:]
 
                                 # Than it is a full date
                                 if self.is_integer(next_term) and int(next_term) <= 2500:
                                     current_term = current_term + " " + next_term
-                                    self.add_to_term_dic(new_doc,self.full_date(current_term))
+                                    self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
                                     if not more_words:
                                         break
                                     continue
@@ -497,65 +508,65 @@ class Parser:
                 if self.is_number_describer(next_term) or flag:
                     current_term = current_term + " " + next_term
 
-                index = doc_test.find(' ')
+                index = text.find(' ')
                 # If the range is like 13 thousand-..
                 if flag:
                     # If the range is like 13 thousand-34.7 ..
                     if self.is_float(next_term[hyphen_index + 1:]):
                         # If the range is like 13 thousand-34.7
                         if not more_words:
-                            new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                            dictionary_of_unique_terms = self.combine_lists(dictionary_of_unique_terms, self.range_term_parser(current_term))
                             break
 
                         # If there are more terms
                         more_words = index != -1
                         if not more_words:
-                            next_term = doc_test
+                            next_term = text
                         else:
-                            next_term = doc_test[0:index]
-                        doc_test = doc_test[index + 1:]
+                            next_term = text[0:index]
+                        text = text[index + 1:]
 
                         # If the range is like 13 thousand-34.7 million
 
                         if self.is_number_describer(next_term) or self.is_fraction(next_term):
                             current_term = current_term +" "+ next_term
-                            new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                            dictionary_of_unique_terms = self.combine_lists(dictionary_of_unique_terms, self.range_term_parser(current_term))
                             if not more_words:
                                 break
                             continue
-                        doc_test = next_term + " " +doc_test
+                        text = next_term + " " +text
 
 
                     else:
-                        new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                        dictionary_of_unique_terms = self.combine_lists(dictionary_of_unique_terms, self.range_term_parser(current_term))
                         if not more_words:
                             break
                         continue
                 else:
                     # If there are no more terms it must be a number
                     if not more_words:
-                        self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
                         break
 
                     # If there are more terms
                     more_words = index != -1
                     if not more_words:
-                        next_term = doc_test
+                        next_term = text
                     else:
-                        next_term = doc_test[0:index]
-                    doc_test = doc_test[index + 1:]
+                        next_term = text[0:index]
+                    text = text[index + 1:]
 
                     lower = next_term.lower()
                     if lower == 'percent' or lower == 'percentage':
                         current_term = current_term + " " + next_term
-                        self.add_to_term_dic(new_doc,self.percentage_number_parsing(current_term))
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.percentage_number_parsing(current_term))
                         if not more_words:
                             break
                         continue
 
                     if lower == 'dollar' or lower == 'dollars':
                         current_term = current_term + " " + next_term
-                        self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
                         if not more_words:
                             break
                         continue
@@ -563,27 +574,27 @@ class Parser:
                     if lower == 'u.s.':
                         temp = next_term
                         if not more_words:
-                            self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
-                            self.add_to_term_dic(new_doc,next_term)
+                            self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
+                            self.add_to_term_dic(dictionary_of_unique_terms,next_term)
                             break
-                        index = doc_test.find(' ')
+                        index = text.find(' ')
                         # If there are more terms
                         more_words = index != -1
                         if not more_words:
-                            next_term = doc_test
+                            next_term = text
                         else:
-                            next_term = doc_test[0:index]
-                        doc_test = doc_test[index + 1:]
+                            next_term = text[0:index]
+                        text = text[index + 1:]
                         lower = next_term.lower()
                         if lower == 'dollar' or lower == 'dollars':
                             current_term = current_term + " " + temp + " " + next_term
-                            self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
+                            self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
                             if not more_words:
                                break
                             continue
 
-                    self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
-                    doc_test = next_term + " " + doc_test
+                    self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
+                    text = next_term + " " + text
                     continue
 
             # If the term is not an integer
@@ -591,139 +602,140 @@ class Parser:
             if current_term[0] == '$':
                 if self.is_number_term(current_term[1:]):
                     if current_term[len(current_term) - 1].lower() in ['k', 'm', 'b', 't', 'q']:
-                        self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
                         continue
 
                     if not more_words:
-                        self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
                         break
 
                     # If there are more terms
                     more_words = index != -1
                     if not more_words:
-                        next_term = doc_test
+                        next_term = text
                     else:
-                        next_term = doc_test[0:index]
-                    doc_test = doc_test[index + 1:]
+                        next_term = text[0:index]
+                    text = text[index + 1:]
 
                     if self.is_number_describer(next_term):
                         current_term = current_term + " " + next_term
 
-                    self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
+                    self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
                     if not more_words:
                        break
                     continue
 
+            # If the curret term starts with the word between
             if current_term.lower() == "between":
 
                 so_far = ''
                 if not more_words:
-                    self.add_to_term_dic(new_doc,current_term)
+                    self.add_to_term_dic(dictionary_of_unique_terms,current_term)
                     break
 
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
-                    next_term = doc_test
+                    next_term = text
                 else:
-                    next_term = doc_test[0:index]
-                doc_test = doc_test[index + 1:]
+                    next_term = text[0:index]
+                text = text[index + 1:]
 
                 so_far = next_term
                 if not self.is_number_term(next_term) or not more_words:
                     if more_words:
-                        doc_test = so_far + " " + doc_test
+                        text = so_far + " " + text
                     else:
-                        doc_test = so_far
-                    self.add_to_term_dic(new_doc,current_term)
+                        text = so_far
+                    self.add_to_term_dic(dictionary_of_unique_terms,current_term)
                     continue
 
-                index = doc_test.find(' ')
+                index = text.find(' ')
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
-                    next_term = doc_test
+                    next_term = text
                 else:
-                    next_term = doc_test[0:index]
-                doc_test = doc_test[index + 1:]
+                    next_term = text[0:index]
+                text = text[index + 1:]
 
                 if self.is_number_describer(next_term):
                     so_far = so_far + " " + next_term
-                    index = doc_test.find(' ')
+                    index = text.find(' ')
                     # If there are more terms
                     more_words = index != -1
                     if not more_words:
-                        next_term = doc_test
+                        next_term = text
                     else:
-                        next_term = doc_test[0:index]
-                    doc_test = doc_test[index + 1:]
+                        next_term = text[0:index]
+                    text = text[index + 1:]
 
                 so_far = so_far + " " + next_term
                 if (next_term.lower() != "and" and next_term.lower() != "to") or not more_words:
                     if more_words:
-                        doc_test = so_far + " " + doc_test
+                        text = so_far + " " + text
                     else:
-                        doc_test = so_far
-                    self.add_to_term_dic(new_doc,current_term)
+                        text = so_far
+                    self.add_to_term_dic(dictionary_of_unique_terms,current_term)
                     continue
-                index = doc_test.find(' ')
+                index = text.find(' ')
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
-                    next_term = doc_test
+                    next_term = text
                 else:
-                    next_term = doc_test[0:index]
-                doc_test = doc_test[index + 1:]
+                    next_term = text[0:index]
+                text = text[index + 1:]
 
                 so_far = so_far + " " + next_term
                 if not self.is_number_term(next_term):
                     if more_words:
-                        doc_test = so_far + " " + doc_test
+                        text = so_far + " " + text
                     else:
-                        doc_test = so_far
-                    self.add_to_term_dic(new_doc,current_term)
+                        text = so_far
+                    self.add_to_term_dic(dictionary_of_unique_terms,current_term)
                     continue
 
                 if more_words:
-                    index = doc_test.find(' ')
+                    index = text.find(' ')
                     # If there are more terms
                     more_words = index != -1
                     if not more_words:
-                        next_term = doc_test
+                        next_term = text
                     else:
-                        next_term = doc_test[0:index]
-                    doc_test = doc_test[index + 1:]
+                        next_term = text[0:index]
+                    text = text[index + 1:]
                     if self.is_number_describer(next_term):
                         so_far = so_far + " " + next_term
                     else:
                         if more_words:
-                            doc_test = next_term + " "+doc_test
+                            text = next_term + " "+text
                         else:
-                            doc_test = next_term
+                            text = next_term
                         more_words = True
 
 
                 current_term = current_term + " " + so_far
 
-                self.combine_list_and_dictionary(new_doc, self.range_term_parser(current_term))
+                self.combine_list_and_dictionary(dictionary_of_unique_terms, self.range_term_parser(current_term))
                 if not more_words:
                    break
                 continue
 
-
+            # if the term is a term for month
             if self.monthToNum(current_term.lower())!= None:
                 if not more_words:
-                    self.add_to_term_dic(new_doc,next_term)
+                    self.add_to_term_dic(dictionary_of_unique_terms,next_term)
                     break
 
-                index = doc_test.find(' ')
+                index = text.find(' ')
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
-                    next_term = doc_test
+                    next_term = text
                 else:
-                    next_term = doc_test[0:index]
-                doc_test = doc_test[index + 1:]
+                    next_term = text[0:index]
+                text = text[index + 1:]
 
 
                 flag1 = self.is_integer(next_term)
@@ -745,70 +757,70 @@ class Parser:
                     flag = int(day) <= 31 and int(day) >= 0
                     current_term = current_term + " " + day
                     if not flag or not more_words:
-                        self.add_to_term_dic(new_doc,self.date(current_term))
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.date(current_term))
                         if not more_words:
                            break
                         continue
 
-                    index = doc_test.find(' ')
+                    index = text.find(' ')
                     # If there are more terms
                     more_words = index != -1
                     if not more_words:
-                        next_term = doc_test
+                        next_term = text
                     else:
-                        next_term = doc_test[0:index]
-                    doc_test = doc_test[index + 1:]
+                        next_term = text[0:index]
+                    text = text[index + 1:]
 
                     if not self.is_integer(next_term):
-                        doc_test = next_term
-                        self.add_to_term_dic(new_doc,self.full_date(current_term))
+                        text = next_term
+                        self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
 
                     current_term = current_term + " " + next_term
-                    self.add_to_term_dic(new_doc,self.full_date(current_term))
+                    self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
                     if not more_words:
                        break
                     continue
-
+            # If the term is a term for a full date
             if self.is_date(current_term):
-                self.add_to_term_dic(new_doc,self.full_date(current_term))
+                self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
                 if not more_words:
                    break
                 continue
 
-
+            # If the term is a type of range term
             if self.is_word_number(current_term):
                 if not more_words:
-                    self.combine_list_and_dictionary(new_doc,self.range_term_parser(current_term))
+                    self.combine_list_and_dictionary(dictionary_of_unique_terms,self.range_term_parser(current_term))
                     break
 
-                index = doc_test.find(' ')
+                index = text.find(' ')
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
-                    next_term = doc_test
+                    next_term = text
                 else:
-                    next_term = doc_test[0:index]
-                doc_test = doc_test[index + 1:]
+                    next_term = text[0:index]
+                text = text[index + 1:]
 
                 if self.is_number_describer(next_term) or self.is_fraction(next_term):
                     current_term = current_term + " "+ next_term
-                    self.combine_list_and_dictionary(new_doc, self.range_term_parser(current_term))
+                    self.combine_list_and_dictionary(dictionary_of_unique_terms, self.range_term_parser(current_term))
                     if not more_words:
                        break
                     continue
 
-                doc_test = next_term +" " + doc_test
+                text = next_term +" " + text
 
             number_of_hyphens = current_term.count('-')
             # If it's word-word or word-word-word
             if number_of_hyphens == 1 or number_of_hyphens == 2:
-                self.combine_list_and_dictionary(new_doc, self.range_term_parser(current_term))
+                self.combine_list_and_dictionary(dictionary_of_unique_terms, self.range_term_parser(current_term))
                 if not more_words:
                    break
                 continue
 
 
-
+            # If the term is not a unique term, add it to the string of words
             additional_word = additional_word +" " + current_term
 
             if not more_words:  # Do while index != -1
@@ -819,19 +831,22 @@ class Parser:
         additional_word = additional_word[1:]
         # Remove stop words anf punctuations
         additional_word = ''.join(ch for ch in additional_word if ch not in ['-','/'])
+        # Removing stop words
         additional_word = self.remove_stop_words(additional_word)
+        # Assigning all the words in the text to a dictionary of words
+        dictionary_of_words = self.scan_list_of_word(additional_word)
+        # getting the frequency of the term that appears most in the text
+        max_freq= self.max_frequency(dictionary_of_words,dictionary_of_unique_terms)
+        # Returning the dictionary of words, the dictionary of unique term, and the max frequency
+        return dictionary_of_words,dictionary_of_unique_terms,max_freq
 
-        dictionary = self.scan_list_of_word(additional_word)
-
-        max_freq= self.max_frequency(dictionary,new_doc)
-        # need to combine the dictionary and the new_doc (also need to maje the new doc a dictionary with a counter)
-        return dictionary,new_doc,max_freq
-
-
+    # This function will remove the stop words from the string
     def remove_stop_words(self,words):
         words = words.split()
         result = [word for word in words if not self.stopWordsHolder.is_stop_word(word)]
         return result
+
+    # This function will return if the term is a term of range that the second half of the range is a number only ony hyphen)
     def is_word_number(self,term):
         number_of_hyphens = term.count('-')
         if number_of_hyphens != 1:
@@ -839,6 +854,7 @@ class Parser:
         second = term[term.find('-')+1:]
         return self.is_number_term(second)
 
+    # Returns True if the term is a number (like 100,000 and not 10,0,0)
     def is_number(self,term):
         index = term.find('.')
         if index == len(term) - 1:
@@ -863,11 +879,13 @@ class Parser:
             temp = temp + term[index:]
         return self.is_float(temp)
 
+    # This function will add a list of terms to the dictionart
     def combine_list_and_dictionary(self,dic, list):
         for i in range(0, len(list)):
             self.add_to_term_dic(dic,list[i])
         return
 
+    # If the term ia=s a term number like 50, 50K and so on
     def is_number_term(self,term):
         length = len(term)
         term = term.lower()
@@ -879,19 +897,23 @@ class Parser:
             return self.is_number(term[:-2])
         return False
 
+    # This function will check if the number is soething like this 14th,30th..
     def is_integer_that_ends_with_th(self,number):
         return number[-2:].lower() == 'th' and self.is_integer(number[:-2])
 
+    # This function will return True if the term is a fraction. like 34 1/3
     def is_fraction(self,term):
         index = term.find('/')
         if index == -1:
             return False
         return self.is_float(term[:index]) and self.is_float(term[index + 1:])
 
+    # This function will return if the string is a discriber of quantity like thousands, millions and so on..
     def is_number_describer(self,word):
         return word.lower() in ['thousand', 'thousands', 'million', 'millions', 'trillions', 'trillion', 'billion',
                                 'billions', 'quadrillion', 'quadrillion', 'bn']
 
+    # Ths function returns True if the term si a full date like this 12/3/2016
     def is_date(self,term):
         num_of_slashes = term.count('/')
         if num_of_slashes != 2:
@@ -917,9 +939,9 @@ class Parser:
 
 
 x = Parser()
-dic , new_doc,max_f=x.parse_to_unique_terms('Adiel and Guy are walking in the street between 5 and 10 pm. guy is the nicest guy, more the adiel')
+dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms('Adiel and Guy are walking in the street between 5 and 10 pm. guy is the nicest guy, more the adiel')
 print(dic)
-print(new_doc)
+print(dictionary_of_unique_terms)
 print(max_f)
 
 # check 14-3 3/4

@@ -8,8 +8,6 @@ class StopWordsHolder:
             file = open("stop_words.txt","r")
         except:
             file = None
-        print file
-
         with file:
             lines = file.readlines()
             self.list_of_stop_words = [line.rstrip('\n') for line in lines]
