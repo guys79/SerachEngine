@@ -5,6 +5,7 @@ class Parser:
     hash_of_words = None
     stopWordsHolder = None
     porter_stemmer = None
+
     # The constructor of the class
     def __init__(self):
         self.hash_of_words = {}# Maybe add a function that reads a data from a file (if we have already parsed before)
@@ -51,8 +52,21 @@ class Parser:
             num_in_string = num_in_string[:-1]
         return num_in_string
 
+    def max_frequency(self,dictionary, new_doc):
+        max_freq = 0
+        for key in dictionary:
+            if max_freq < dictionary[key]:
+                max_freq = dictionary[key]
+        for key in new_doc:
+            if max_freq < new_doc[key]:
+                max_freq = new_doc[key]
+        return max_freq
 
-
+    def add_to_term_dic(self,new_doc,key):
+        if key in new_doc:
+            new_doc[key] = new_doc[key] + 1
+            return
+        new_doc[key] = 1
     # This function will return a number after being parsed
     def parseNumber(self,term):
         kind = self.numberKind(term)
@@ -353,7 +367,7 @@ class Parser:
 
     def parse_to_unique_terms(self,doc_test):
         index = -1  # The index of the current closest space
-        new_doc = []  # The new doc
+        new_doc = {}  # The new doc
         current_term = ''  # The current term
         next_term = ''  # The next term
         more_words = index != -1
@@ -390,7 +404,7 @@ class Parser:
                 # If there are no more terms
                 if not more_words:
                     # Is just a number
-                    new_doc.append(self.convert_number_to_wanted_state(current_term))
+                    self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
                     return new_doc
 
                 # If there are more terms
@@ -418,9 +432,9 @@ class Parser:
                             if not more_words:
                                 # Is just a number or percent like this 22 3/4%
                                 if flag:
-                                    new_doc.append(self.percentage_number_parsing(current_term))
+                                    self.add_to_term_dic(new_doc,self.percentage_number_parsing(current_term))
                                 else:
-                                    new_doc.append(self.convert_number_to_wanted_state(current_term))
+                                    self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
                                 break
 
                             # If there are more terms
@@ -435,14 +449,14 @@ class Parser:
                             lower = next_term.lower()
                             if lower == 'dollars' or lower == 'dollar':
                                 current_term = current_term + " " + next_term
-                                new_doc.append(self.price_number_parsing(current_term))
+                                self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
                                 if not more_words:
                                     break
                                 continue
                             # If it's a percent term
                             if lower == 'percent' or lower == 'percentage':
                                 current_term = current_term + " " + next_term
-                                new_doc.append(self.percentage_number_parsing(current_term))
+                                self.add_to_term_dic(new_doc,self.percentage_number_parsing(current_term))
                                 if not more_words:
                                     break
                                 continue
@@ -455,7 +469,7 @@ class Parser:
                                 # If there are no more terms
                                 if not more_words:
                                     # It is a date like 20 March
-                                    new_doc.append(self.date(current_term))
+                                    self.add_to_term_dic(new_doc,self.date(current_term))
                                     break
 
                                 index = doc_test.find(' ')
@@ -470,7 +484,7 @@ class Parser:
                                 # Than it is a full date
                                 if self.is_integer(next_term) and int(next_term) <= 2500:
                                     current_term = current_term + " " + next_term
-                                    new_doc.append(self.full_date(current_term))
+                                    self.add_to_term_dic(new_doc,self.full_date(current_term))
                                     if not more_words:
                                         break
                                     continue
@@ -520,7 +534,7 @@ class Parser:
                 else:
                     # If there are no more terms it must be a number
                     if not more_words:
-                        new_doc.append(self.convert_number_to_wanted_state(current_term))
+                        self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
                         break
 
                     # If there are more terms
@@ -534,14 +548,14 @@ class Parser:
                     lower = next_term.lower()
                     if lower == 'percent' or lower == 'percentage':
                         current_term = current_term + " " + next_term
-                        new_doc.append(self.percentage_number_parsing(current_term))
+                        self.add_to_term_dic(new_doc,self.percentage_number_parsing(current_term))
                         if not more_words:
                             break
                         continue
 
                     if lower == 'dollar' or lower == 'dollars':
                         current_term = current_term + " " + next_term
-                        new_doc.append(self.price_number_parsing(current_term))
+                        self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
                         if not more_words:
                             break
                         continue
@@ -549,8 +563,8 @@ class Parser:
                     if lower == 'u.s.':
                         temp = next_term
                         if not more_words:
-                            new_doc.append(self.convert_number_to_wanted_state(current_term))
-                            new_doc.append(next_term)
+                            self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
+                            self.add_to_term_dic(new_doc,next_term)
                             break
                         index = doc_test.find(' ')
                         # If there are more terms
@@ -563,12 +577,12 @@ class Parser:
                         lower = next_term.lower()
                         if lower == 'dollar' or lower == 'dollars':
                             current_term = current_term + " " + temp + " " + next_term
-                            new_doc.append(self.price_number_parsing(current_term))
+                            self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
                             if not more_words:
                                break
                             continue
 
-                    new_doc.append(self.convert_number_to_wanted_state(current_term))
+                    self.add_to_term_dic(new_doc,self.convert_number_to_wanted_state(current_term))
                     doc_test = next_term + " " + doc_test
                     continue
 
@@ -577,11 +591,11 @@ class Parser:
             if current_term[0] == '$':
                 if self.is_number_term(current_term[1:]):
                     if current_term[len(current_term) - 1].lower() in ['k', 'm', 'b', 't', 'q']:
-                        new_doc.append(self.price_number_parsing(current_term))
+                        self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
                         continue
 
                     if not more_words:
-                        new_doc.append(self.price_number_parsing(current_term))
+                        self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
                         break
 
                     # If there are more terms
@@ -595,7 +609,7 @@ class Parser:
                     if self.is_number_describer(next_term):
                         current_term = current_term + " " + next_term
 
-                    new_doc.append(self.price_number_parsing(current_term))
+                    self.add_to_term_dic(new_doc,self.price_number_parsing(current_term))
                     if not more_words:
                        break
                     continue
@@ -604,7 +618,7 @@ class Parser:
 
                 so_far = ''
                 if not more_words:
-                    new_doc.append(current_term)
+                    self.add_to_term_dic(new_doc,current_term)
                     break
 
                 # If there are more terms
@@ -621,7 +635,7 @@ class Parser:
                         doc_test = so_far + " " + doc_test
                     else:
                         doc_test = so_far
-                    new_doc.append(current_term)
+                    self.add_to_term_dic(new_doc,current_term)
                     continue
 
                 index = doc_test.find(' ')
@@ -645,15 +659,13 @@ class Parser:
                     doc_test = doc_test[index + 1:]
 
                 so_far = so_far + " " + next_term
-                print next_term
                 if (next_term.lower() != "and" and next_term.lower() != "to") or not more_words:
                     if more_words:
                         doc_test = so_far + " " + doc_test
                     else:
                         doc_test = so_far
-                    new_doc.append(current_term)
+                    self.add_to_term_dic(new_doc,current_term)
                     continue
-                print next_term
                 index = doc_test.find(' ')
                 # If there are more terms
                 more_words = index != -1
@@ -669,7 +681,7 @@ class Parser:
                         doc_test = so_far + " " + doc_test
                     else:
                         doc_test = so_far
-                    new_doc.append(current_term)
+                    self.add_to_term_dic(new_doc,current_term)
                     continue
 
                 if more_words:
@@ -685,14 +697,15 @@ class Parser:
                         so_far = so_far + " " + next_term
                     else:
                         if more_words:
-                            doc_test = next_term + doc_test
+                            doc_test = next_term + " "+doc_test
                         else:
                             doc_test = next_term
                         more_words = True
 
 
                 current_term = current_term + " " + so_far
-                new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+
+                self.combine_list_and_dictionary(new_doc, self.range_term_parser(current_term))
                 if not more_words:
                    break
                 continue
@@ -700,7 +713,7 @@ class Parser:
 
             if self.monthToNum(current_term.lower())!= None:
                 if not more_words:
-                    new_doc.append(next_term)
+                    self.add_to_term_dic(new_doc,next_term)
                     break
 
                 index = doc_test.find(' ')
@@ -732,7 +745,7 @@ class Parser:
                     flag = int(day) <= 31 and int(day) >= 0
                     current_term = current_term + " " + day
                     if not flag or not more_words:
-                        new_doc.append(self.date(current_term))
+                        self.add_to_term_dic(new_doc,self.date(current_term))
                         if not more_words:
                            break
                         continue
@@ -748,16 +761,16 @@ class Parser:
 
                     if not self.is_integer(next_term):
                         doc_test = next_term
-                        new_doc.append(self.full_date(current_term))
+                        self.add_to_term_dic(new_doc,self.full_date(current_term))
 
                     current_term = current_term + " " + next_term
-                    new_doc.append(self.full_date(current_term))
+                    self.add_to_term_dic(new_doc,self.full_date(current_term))
                     if not more_words:
                        break
                     continue
 
             if self.is_date(current_term):
-                new_doc.append(self.full_date(current_term))
+                self.add_to_term_dic(new_doc,self.full_date(current_term))
                 if not more_words:
                    break
                 continue
@@ -765,7 +778,7 @@ class Parser:
 
             if self.is_word_number(current_term):
                 if not more_words:
-                    new_doc = self.combine_lists(new_doc,self.range_term_parser(current_term))
+                    self.combine_list_and_dictionary(new_doc,self.range_term_parser(current_term))
                     break
 
                 index = doc_test.find(' ')
@@ -779,7 +792,7 @@ class Parser:
 
                 if self.is_number_describer(next_term) or self.is_fraction(next_term):
                     current_term = current_term + " "+ next_term
-                    new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                    self.combine_list_and_dictionary(new_doc, self.range_term_parser(current_term))
                     if not more_words:
                        break
                     continue
@@ -789,7 +802,7 @@ class Parser:
             number_of_hyphens = current_term.count('-')
             # If it's word-word or word-word-word
             if number_of_hyphens == 1 or number_of_hyphens == 2:
-                new_doc = self.combine_lists(new_doc, self.range_term_parser(current_term))
+                self.combine_list_and_dictionary(new_doc, self.range_term_parser(current_term))
                 if not more_words:
                    break
                 continue
@@ -804,27 +817,17 @@ class Parser:
 
 
         additional_word = additional_word[1:]
-        print additional_word
         # Remove stop words anf punctuations
         additional_word = ''.join(ch for ch in additional_word if ch not in ['-','/'])
         additional_word = self.remove_stop_words(additional_word)
-        print additional_word
 
         dictionary = self.scan_list_of_word(additional_word)
-        print dictionary
-        self.add_list_of_terms_to_dictionary(new_doc,dictionary)
+
+        max_freq= self.max_frequency(dictionary,new_doc)
         # need to combine the dictionary and the new_doc (also need to maje the new doc a dictionary with a counter)
-        return dictionary
+        return dictionary,new_doc,max_freq
 
 
-    def add_list_of_terms_to_dictionary(self,list_of_terms,dictionary):
-        for i in range(0,len(list_of_terms)):
-            self.add_to_dictionary(dictionary,list_of_terms[i])
-    def add_to_dictionary(self,dictionary,term):
-        if term in dictionary:
-            dictionary[term] = dictionary[term] + 1
-        else:
-            dictionary[term] = 1
     def remove_stop_words(self,words):
         words = words.split()
         result = [word for word in words if not self.stopWordsHolder.is_stop_word(word)]
@@ -860,10 +863,10 @@ class Parser:
             temp = temp + term[index:]
         return self.is_float(temp)
 
-    def combine_lists(self,list1, list2):
-        for i in range(0, len(list1)):
-            list2.append(list1[i])
-        return list2
+    def combine_list_and_dictionary(self,dic, list):
+        for i in range(0, len(list)):
+            self.add_to_term_dic(dic,list[i])
+        return
 
     def is_number_term(self,term):
         length = len(term)
@@ -914,7 +917,11 @@ class Parser:
 
 
 x = Parser()
-print(x.parse_to_unique_terms('Adiel and Guy are walking in the street between 5 and 10 pm'))
+dic , new_doc,max_f=x.parse_to_unique_terms('Adiel and Guy are walking in the street between 5 and 10 pm. guy is the nicest guy, more the adiel')
+print(dic)
+print(new_doc)
+print(max_f)
+
 # check 14-3 3/4
 # or word-3 3/4
 
