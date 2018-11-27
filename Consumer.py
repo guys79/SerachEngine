@@ -28,7 +28,7 @@ class Consumer (threading.Thread):
             self.list_of_terms.task_done()
 
     def process(self,item):
-        #If new, find the right place to insert, and than insert and update the list of line positions
+        # If new, find the right place to insert, and than insert and update the list of line positions
         #if not new, find the term, add the gap, update the list
         self.posting_file = open(self.file_path,"r+")
         begin = 0
