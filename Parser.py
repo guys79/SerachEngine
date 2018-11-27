@@ -406,7 +406,6 @@ class Parser:
         text = ''.join(ch for ch in text if ch not in exclude)
         # Do while index != -1
         while True:
-
             #print("text = %s" % text)
             #print("dictionary_of_unique_terms = %s" % dictionary_of_unique_terms)
             index = text.find(' ')
@@ -421,6 +420,8 @@ class Parser:
             index = text.find(' ')
             length = len(current_term)
             if length == 0:
+                if len(text) == 0:
+                    break
                 continue
             if self.is_integer_that_ends_with_th(current_term):
                 current_term = current_term[:-2]
@@ -875,7 +876,7 @@ class Parser:
             # If the term is not a unique term, add it to the string of words
             additional_word = additional_word +" " + current_term
 
-            if not more_words:  # Do while index != -1
+            if not more_words or text == '':  # Do while index != -1
                 break
 
 
@@ -1107,7 +1108,7 @@ class Parser:
 
 
 #x = Parser()
-#dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms('10000 grams')
+#dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms('guy[')
 #print(dic)
 #print(dictionary_of_unique_terms)
 #print(max_f)

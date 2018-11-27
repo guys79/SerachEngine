@@ -19,7 +19,7 @@ class Indexer:
             self.name_of_files.append(chr(ord('a')+i))
         for i in range(0,10):
             self.name_of_files.append('%d' % i)
-        self.name_of_files.append('other' % i)
+        self.name_of_files.append('other')
 
         # The file type is txt
         self.file_type = 'txt'
