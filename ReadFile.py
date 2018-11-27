@@ -31,7 +31,7 @@ class ReadFile:
 
         name = self.findTheName(content,start)
         tempArr=[self.doc_id_generator,newArrey]
-        self.dictionary_doc_name_id[name] = self.doc_id_generator
+        self.dictionary_doc_name_id[self.doc_id_generator] =name
         self.doc_id_generator = self.doc_id_generator + 1
         self.docsInFile.append(tempArr)
     # returns the next document in the the corpus directory
@@ -80,11 +80,4 @@ class ReadFile:
         return
 
 
-
-x = ReadFile('C:\Users\guys7\Downloads\corpus')
-
-while True:
-    p =x.getFile()
-    if p == "all docs are received":
-        break
 

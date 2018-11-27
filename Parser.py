@@ -96,6 +96,7 @@ class Parser:
             if term[len(term)-1] == 'q' or term[len(term)-1] == 'Q':
                 return 'Q'
 
+
             end_of = term.lower()
 
             if end_of[-2:] == 'bn' or end_of[-3:] == ' bn':
@@ -384,6 +385,8 @@ class Parser:
                 return arrayOfDates
                 return day + "-" + month + "-" + year
 
+
+
     # This is the mother of all functions.
     # The function will get a text as a long string and will return 3 parameters:
     # First dictionary - The dictionary of all the words in the text.
@@ -395,8 +398,6 @@ class Parser:
         current_term = ''  # The current term
         next_term = ''  # The next term
         more_words = index != -1
-        save_doc = text
-        index_saver = index
         additional_word = ''
         text = ' '.join(text.split())
         exclude = set(punctuation)
@@ -439,8 +440,8 @@ class Parser:
                     next_term = text[0:index]
                 text = text[index + 1:]
 
-                save_next_term = next_term
-                save_doc = text
+
+
                 # If the term is an integer
                 if self.is_integer(current_term):
                     if int(current_term).__abs__() < 1000:
@@ -469,8 +470,8 @@ class Parser:
                                 next_term = text[0:index]
                             text = text[index + 1:]
 
-                            # If it's a price term
                             lower = next_term.lower()
+                            # If it's a price term
                             if lower == 'dollars' or lower == 'dollar':
                                 current_term = current_term + " " + next_term
                                 self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
@@ -481,6 +482,14 @@ class Parser:
                             if lower == 'percent' or lower == 'percentage':
                                 current_term = current_term + " " + next_term
                                 self.add_to_term_dic(dictionary_of_unique_terms,self.percentage_number_parsing(current_term))
+                                if not more_words:
+                                    break
+                                continue
+
+                            if self.is_weight_measurement(lower):
+                                current_term = current_term + " " + next_term
+                                self.add_to_term_dic(dictionary_of_unique_terms,
+                                                     self.convert_to_kg(current_term))
                                 if not more_words:
                                     break
                                 continue
@@ -511,8 +520,31 @@ class Parser:
                                     self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
                                     if not more_words:
                                         break
-                                    continue
 
+                                    continue
+                    lower = next_term.lower()
+                    # If it's a price term
+                    if lower == 'dollars' or lower == 'dollar':
+                        current_term = current_term + " " + next_term
+                        self.add_to_term_dic(dictionary_of_unique_terms, self.price_number_parsing(current_term))
+                        if not more_words:
+                            break
+                        continue
+                    # If it's a percent term
+                    if lower == 'percent' or lower == 'percentage':
+                        current_term = current_term + " " + next_term
+                        self.add_to_term_dic(dictionary_of_unique_terms, self.percentage_number_parsing(current_term))
+                        if not more_words:
+                            break
+                        continue
+
+                    if self.is_weight_measurement(lower):
+                        current_term = current_term + " " + next_term
+                        self.add_to_term_dic(dictionary_of_unique_terms,
+                                             self.convert_to_kg(current_term))
+                        if not more_words:
+                            break
+                        continue
 
                 # The term is a number that is not an integer or that it's absolute value is not smaller
                 # than 1000 or not one of the checks above
@@ -580,6 +612,13 @@ class Parser:
                     if lower == 'dollar' or lower == 'dollars':
                         current_term = current_term + " " + next_term
                         self.add_to_term_dic(dictionary_of_unique_terms,self.price_number_parsing(current_term))
+                        if not more_words:
+                            break
+                        continue
+
+                    if self.is_weight_measurement(lower):
+                        current_term = current_term + " " + next_term
+                        self.add_to_term_dic(dictionary_of_unique_terms, self.convert_to_kg(current_term))
                         if not more_words:
                             break
                         continue
@@ -947,127 +986,131 @@ class Parser:
 
         return (first <= 31 and second <= 12) or (first <= 12 and second <= 31)
 
-        # this function should return the begining of a weigth. for example:13kg return 2
-        def find_the_letter(self, weith):
-            place = len(weith)
-            weith = weith.lower()
-            if weith.find('a') != -1 and weith.find('a') < place:
-                place = weith.find('a')
-            if weith.find('b') != -1 and weith.find('b') < place:
-                place = weith.find('b')
-            if weith.find('c') != -1 and weith.find('c') < place:
-                place = weith.find('c')
-            if weith.find('d') != -1 and weith.find('d') < place:
-                place = weith.find('d')
-            if weith.find('e') != -1 and weith.find('e') < place:
-                place = weith.find('e')
-            if weith.find('f') != -1 and weith.find('f') < place:
-                place = weith.find('f')
-            if weith.find('g') != -1 and weith.find('g') < place:
-                place = weith.find('g')
-            if weith.find('h') != -1 and weith.find('h') < place:
-                place = weith.find('h')
-            if weith.find('i') != -1 and weith.find('i') < place:
-                place = weith.find('i')
-            if weith.find('j') != -1 and weith.find('j') < place:
-                place = weith.find('j')
-            if weith.find('k') != -1 and weith.find('k') < place:
-                place = weith.find('k')
-            if weith.find('l') != -1 and weith.find('l') < place:
-                place = weith.find('l')
-            if weith.find('m') != -1 and weith.find('m') < place:
-                place = weith.find('m')
-            if weith.find('n') != -1 and weith.find('n') < place:
-                place = weith.find('n')
-            if weith.find('o') != -1 and weith.find('o') < place:
-                place = weith.find('o')
-            if weith.find('p') != -1 and weith.find('p') < place:
-                place = weith.find('p')
-            if weith.find('q') != -1 and weith.find('q') < place:
-                place = weith.find('q')
-            if weith.find('r') != -1 and weith.find('r') < place:
-                place = weith.find('r')
-            if weith.find('s') != -1 and weith.find('s') < place:
-                place = weith.find('s')
-            if weith.find('t') != -1 and weith.find('t') < place:
-                place = weith.find('t')
-            if weith.find('u') != -1 and weith.find('u') < place:
-                place = weith.find('u')
-            if weith.find('v') != -1 and weith.find('v') < place:
-                place = weith.find('v')
-            if weith.find('w') != -1 and weith.find('w') < place:
-                place = weith.find('w')
-            if weith.find('x') != -1 and weith.find('x') < place:
-                place = weith.find('x')
-            if weith.find('y') != -1 and weith.find('y') < place:
-                place = weith.find('y')
-            if weith.find('z') != -1 and weith.find('z') < place:
-                place = weith.find('z')
-            return place
+    # this function should return the begining of a weigth. for example:13kg return 2
+    def find_the_letter(self, weith):
+        place = len(weith)
+        weith = weith.lower()
+        if weith.find('a') != -1 and weith.find('a') < place:
+            place = weith.find('a')
+        if weith.find('b') != -1 and weith.find('b') < place:
+            place = weith.find('b')
+        if weith.find('c') != -1 and weith.find('c') < place:
+            place = weith.find('c')
+        if weith.find('d') != -1 and weith.find('d') < place:
+            place = weith.find('d')
+        if weith.find('e') != -1 and weith.find('e') < place:
+            place = weith.find('e')
+        if weith.find('f') != -1 and weith.find('f') < place:
+            place = weith.find('f')
+        if weith.find('g') != -1 and weith.find('g') < place:
+            place = weith.find('g')
+        if weith.find('h') != -1 and weith.find('h') < place:
+            place = weith.find('h')
+        if weith.find('i') != -1 and weith.find('i') < place:
+            place = weith.find('i')
+        if weith.find('j') != -1 and weith.find('j') < place:
+            place = weith.find('j')
+        if weith.find('k') != -1 and weith.find('k') < place:
+            place = weith.find('k')
+        if weith.find('l') != -1 and weith.find('l') < place:
+            place = weith.find('l')
+        if weith.find('m') != -1 and weith.find('m') < place:
+            place = weith.find('m')
+        if weith.find('n') != -1 and weith.find('n') < place:
+            place = weith.find('n')
+        if weith.find('o') != -1 and weith.find('o') < place:
+            place = weith.find('o')
+        if weith.find('p') != -1 and weith.find('p') < place:
+            place = weith.find('p')
+        if weith.find('q') != -1 and weith.find('q') < place:
+            place = weith.find('q')
+        if weith.find('r') != -1 and weith.find('r') < place:
+            place = weith.find('r')
+        if weith.find('s') != -1 and weith.find('s') < place:
+            place = weith.find('s')
+        if weith.find('t') != -1 and weith.find('t') < place:
+            place = weith.find('t')
+        if weith.find('u') != -1 and weith.find('u') < place:
+            place = weith.find('u')
+        if weith.find('v') != -1 and weith.find('v') < place:
+            place = weith.find('v')
+        if weith.find('w') != -1 and weith.find('w') < place:
+            place = weith.find('w')
+        if weith.find('x') != -1 and weith.find('x') < place:
+            place = weith.find('x')
+        if weith.find('y') != -1 and weith.find('y') < place:
+            place = weith.find('y')
+        if weith.find('z') != -1 and weith.find('z') < place:
+            place = weith.find('z')
+        return place
+    # this function shoud give us the number that we neet to mult in in order to get kg
+    def how_much_to_mult_for_kg(self, term):
+        term = term.lower()
+        if term in ["gram","g","grams"]:
+            return math.pow(10, - 3)
+        if term in ["decagram","dag","decagrams"]:
+            return math.pow(10, 1 - 3)
+        if term in ["hectogram","hg","hectograms"]:
+            return math.pow(10, 2 - 3)
+        if term in ["kilogram","kg","kilograms"]:
+            return math.pow(10, 3 - 3)
+        if term in ["tonne","ton","tons"]:
+            return math.pow(10, 6 - 3)
+        if term in ["decigram","dg","decigrams"]:
+            return math.pow(10, -1 - 3)
+        if term in ["centigram","cg","centigrams"]:
+            return math.pow(10, -2 - 3)
+        if term in ["milligram","mg","milligrams"]:
+            return math.pow(10, -3 - 3)
 
-        # this function shoud give us the number that we neet to mult in in order to get kg
-        def how_much_to_mult_for_kg(self, term):
-            if term == "gram" or term == "g":
-                return math.pow(10, - 3)
-            if term == "decagram" or term == "dag":
-                return math.pow(10, 1 - 3)
-            if term == "hectogram" or term == "hg":
-                return math.pow(10, 2 - 3)
-            if term == "kilogram" or term == "kg":
-                return math.pow(10, 3 - 3)
-            if term == "tonne":
-                return math.pow(10, 6 - 3)
-            if term == "decigram" or term == "dg":
-                return math.pow(10, -1 - 3)
-            if term == "centigram" or term == "cg":
-                return math.pow(10, -2 - 3)
-            if term == "milligram" or term == "mg":
-                return math.pow(10, -3 - 3)
+    def is_weight_measurement(self,term):
+        return term in ["gram","g","grams","decagram","dag","decagrams","hectogram","hg","hectograms","kilogram","kg","kilograms","tonne","ton","tons","decigram","dg","decigrams","centigram","cg","centigrams","milligram","mg","milligrams"]
+    # convert any measer unit into kg
+    def convert_to_kg(self, weigth):
+        weigth = self.convert_to_degit_num(weigth)
+        place = int(self.find_the_letter(weigth))
+        num = weigth[0:place]
+        measure_unit = weigth[place:]
+        if num == "":
+            return measure_unit
+        measure_unit = measure_unit.lower()
+        measure_unit = self.how_much_to_mult_for_kg(measure_unit)
+        num = float(num)
+        measure_unit = float(measure_unit)
+        num = num * measure_unit
+        return self.curve_around_the_edges(self.convert_number_to_wanted_state(str(num))) + " " + "kg"
 
-        # convert any measer unit into kg
-        def convert_to_kg(self, weigth):
-            weigth = self.convert_to_degit_num(weigth)
-            place = int(self.find_the_letter(weigth))
-            num = weigth[0:place]
-            measure_unit = weigth[place:]
-            if num == "":
-                return measure_unit
-            measure_unit = measure_unit.lower()
-            measure_unit = self.how_much_to_mult_for_kg(measure_unit)
-            num = float(num)
-            measure_unit = float(measure_unit)
-            num = num * measure_unit
-            return str(num) + " " + "kg"
+    # This function will return True if variable is a string
+    def is_string(self, str):
+        try:
+            str = str + ''
+        except:
+            return False
+        return True
 
-        def is_string(self, str):
-            try:
-                str = str + ''
-            except:
-                return False
-            return True
-
-        # if we get 200 handred kg it will return 20000.0kg
-        def convert_to_degit_num(self, str):
-            arrStr = str.split()
-            if len(arrStr) == 3:
-                arrStr = [(self.parseNumber(arrStr[0] + " " + arrStr[1])), arrStr[2]]
-            if len(arrStr) == 2:
+    # if we get 200 hundred kg it will return 20000.0kg
+    def convert_to_degit_num(self, str):
+        arrStr = str.split()
+        if len(arrStr) == 3:
+            arrStr = [(self.parseNumber(arrStr[0] + " " + arrStr[1])), arrStr[2]]
+        if len(arrStr) == 2:
+            x = arrStr[0]
+            if self.is_string(x):
                 x = arrStr[0]
-                if self.is_string(x):
-                    x = arrStr[0]
-                else:
-                    x = "%d" % x
-                weigt = x + (arrStr[1])
-                return weigt
-            return str
+            else:
+                x = "%d" % x
+            weigt = x + (arrStr[1])
+            return weigt
+        return str
 
 
 
-x = Parser()
-dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms('Adiel and Guy are walking in the street between 5 and 10 pm. guy is the nicest guy, more the adiel')
-print(dic)
-print(dictionary_of_unique_terms)
-print(max_f)
+
+#x = Parser()
+#dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms('10000 grams')
+#print(dic)
+#print(dictionary_of_unique_terms)
+#print(max_f)
 
 # check 14-3 3/4
 # or word-3 3/4
