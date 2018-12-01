@@ -45,12 +45,10 @@ class Parser:
         index = num_in_string.find('.')
         if index == -1:
             return num_in_string
-        i = len(num_in_string) - 1
-        while num_in_string[i] == '0':
-            num_in_string = num_in_string[:-1]
-            i = i -1
-        if num_in_string[i] == '.':
-            num_in_string = num_in_string[:-1]
+        if len(num_in_string)-index>3:
+            if num_in_string[index+3]>='5':
+                return num_in_string[:index+2]+chr(ord(num_in_string[index+2])+1)
+            return num_in_string[:index + 3]
         return num_in_string
 
     # This function will return the maximum frequency of a certain ter in two dictionaries
@@ -170,7 +168,10 @@ class Parser:
     # This function will handle a word regard to small and big letters and adds the word the the dictionary
     def word_scan(self,word,dictionary):
         flag = len(word) > 0 and word[0] >= 'A' and word[0] <= 'Z'
-        word = self.porter_stemmer.stem(word).encode("ascii")
+        try:
+            word = self.porter_stemmer.stem(word).encode("ascii")
+        except UnicodeDecodeError:
+            1
         upper_word = word.upper()
         numer_of_app = 0
         if flag:
@@ -321,59 +322,27 @@ class Parser:
     def parse_doc(self,doc_text):
         temp_text = doc_text
 
-        # this function should return DD-MM-YY format for all the formats of how to write full date
-        def full_date(self, term):
-            # we check if the date is from the from of dd/mm/yy
-            if "/" in term:
-                newTerm = term.split("/")
-                # we check correction
-                if self.is_integer(newTerm[0]) == False or self.is_integer(newTerm[1]) == False or self.is_integer(
-                        newTerm[2]) == False:
-                    return term
-                # we check if we can identify if the string id dd/mm/yy or mm/dd/yy
-                if (newTerm[0] > 12 or newTerm[1] > 12) and len(newTerm[2]) > 1:
-                    if int(newTerm[1]) > 12:
-                        temp = newTerm[1]
-                        newTerm[1] = newTerm[0]
-                        newTerm[0] = temp
-                    if len(newTerm[1]) == 1:
-                        newTerm[1] = "0" + newTerm[1]
-                    arrayOfDates = []
-                    day = newTerm[0]
-                    month = newTerm[1]
-                    year = newTerm[2]
-                    if len(year) > 2:
-                        arrayOfDates.append(year)
-                        if len(year) == 3:
-                            year = year[1:]
-                        else:
-                            year = year[2:]
-                    arrayOfDates.append(day + "-" + month + "-" + year)
-                    arrayOfDates.append(day + "-" + month)
-                    return arrayOfDates
+    # this function should return DD-MM-YY format for all the formats of how to write full date
+    def full_date(self, term):
+        # we check if the date is from the from of dd/mm/yy
+        if "/" in term:
+            newTerm = term.split("/")
+            # we check correction
+            if self.is_integer(newTerm[0]) == False or self.is_integer(newTerm[1]) == False or self.is_integer(
+                    newTerm[2]) == False:
                 return term
-            # we check if the format is written in words
-            else:
-                val = term
-                term = term.lower()
-                term = term.replace("th", "")
-                term = term.replace(",", "")
-                newTerm = term.split(' ')
-                if len(newTerm) < 3:
-                    return val
-                if self.is_integer(newTerm[1]):
+            # we check if we can identify if the string id dd/mm/yy or mm/dd/yy
+            if (newTerm[0] > 12 or newTerm[1] > 12) and len(newTerm[2]) > 1:
+                if int(newTerm[1]) > 12:
                     temp = newTerm[1]
                     newTerm[1] = newTerm[0]
                     newTerm[0] = temp
-                day = self.date(newTerm[0] + " " + newTerm[1])
-                if day == "it is not a month":
-                    return val
-                year = self.date(newTerm[1] + " " + newTerm[2])
-                day = day[3:]
-                year = year.split("-")
-                month = year[1]
-                year = year[0]
+                if len(newTerm[1]) == 1:
+                    newTerm[1] = "0" + newTerm[1]
                 arrayOfDates = []
+                day = newTerm[0]
+                month = newTerm[1]
+                year = newTerm[2]
                 if len(year) > 2:
                     arrayOfDates.append(year)
                     if len(year) == 3:
@@ -383,7 +352,39 @@ class Parser:
                 arrayOfDates.append(day + "-" + month + "-" + year)
                 arrayOfDates.append(day + "-" + month)
                 return arrayOfDates
-                return day + "-" + month + "-" + year
+            return term
+        # we check if the format is written in words
+        else:
+            val = term
+            term = term.lower()
+            term = term.replace("th", "")
+            term = term.replace(",", "")
+            newTerm = term.split(' ')
+            if len(newTerm) < 3:
+                return val
+            if self.is_integer(newTerm[1]):
+                temp = newTerm[1]
+                newTerm[1] = newTerm[0]
+                newTerm[0] = temp
+            day = self.date(newTerm[0] + " " + newTerm[1])
+            if day == "it is not a month":
+                return val
+            year = self.date(newTerm[1] + " " + newTerm[2])
+            day = day[3:]
+            year = year.split("-")
+            month = year[1]
+            year = year[0]
+            arrayOfDates = []
+            if len(year) > 2:
+              arrayOfDates.append(year)
+            if len(year) == 3:
+                year = year[1:]
+            else:
+                year = year[2:]
+            arrayOfDates.append(day + "-" + month + "-" + year)
+            arrayOfDates.append(day + "-" + month)
+            return arrayOfDates
+            return day + "-" + month + "-" + year
 
 
 
@@ -406,6 +407,7 @@ class Parser:
         text = ''.join(ch for ch in text if ch not in exclude)
         # Do while index != -1
         while True:
+
             #print("text = %s" % text)
             #print("dictionary_of_unique_terms = %s" % dictionary_of_unique_terms)
             index = text.find(' ')
@@ -415,7 +417,6 @@ class Parser:
                 current_term = text
             else:
                 current_term = text[0:index]
-
             text = text[index + 1:]
             index = text.find(' ')
             length = len(current_term)
@@ -431,8 +432,9 @@ class Parser:
                 if not more_words:
                     # Is just a number
                     self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
-                    return {},dictionary_of_unique_terms,self.max_frequency({},dictionary_of_unique_terms)
+                    break
 
+                more_words_save = more_words
                 # If there are more terms
                 more_words = index != -1
                 if not more_words:
@@ -442,13 +444,20 @@ class Parser:
                 text = text[index + 1:]
 
 
+                if self.is_fraction(current_term):
+                    if more_words:
+                        text = next_term + " "+text
+                    more_words = more_words_save
+                    next_term = current_term
+                    current_term = "0"
+
 
                 # If the term is an integer
                 if self.is_integer(current_term):
                     if int(current_term).__abs__() < 1000:
                         # If the number is a fraction
-                        if self.is_fraction(next_term) or (
-                                (next_term[len(next_term) - 1] == '%') and self.is_fraction(next_term[:-1])):
+                        if len(next_term) !=0 and (self.is_fraction(next_term) or (
+                                (next_term[len(next_term) - 1] == '%') and self.is_fraction(next_term[:-1]))):
 
                             flag = next_term[len(next_term) - 1] == '%'
                             current_term = current_term + " " + next_term
@@ -495,6 +504,10 @@ class Parser:
                                     break
                                 continue
 
+                            text = next_term + " " + text
+                            self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
+                            continue
+
                         # This is an integer smaller than 1000 and without a fraction
                         # We will check is it is a date
                         if int(current_term) <= 31 and int(current_term) >= 1:
@@ -518,11 +531,15 @@ class Parser:
                                 # Than it is a full date
                                 if self.is_integer(next_term) and int(next_term) <= 2500:
                                     current_term = current_term + " " + next_term
-                                    self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
+                                    self.combine_list_and_dictionary(dictionary_of_unique_terms,self.full_date(current_term))
                                     if not more_words:
                                         break
-
                                     continue
+                                text = next_term + " " +text
+                                self.add_to_term_dic(dictionary_of_unique_terms,
+                                                     self.date(current_term))
+                                continue
+
                     lower = next_term.lower()
                     # If it's a price term
                     if lower == 'dollars' or lower == 'dollar':
@@ -561,7 +578,7 @@ class Parser:
                     if self.is_float(next_term[hyphen_index + 1:]):
                         # If the range is like 13 thousand-34.7
                         if not more_words:
-                            dictionary_of_unique_terms = self.combine_lists(dictionary_of_unique_terms, self.range_term_parser(current_term))
+                            self.combine_list_and_dictionary(dictionary_of_unique_terms, self.range_term_parser(current_term))
                             break
 
                         # If there are more terms
@@ -576,7 +593,7 @@ class Parser:
 
                         if self.is_number_describer(next_term) or self.is_fraction(next_term):
                             current_term = current_term +" "+ next_term
-                            dictionary_of_unique_terms = self.combine_lists(dictionary_of_unique_terms, self.range_term_parser(current_term))
+                            self.combine_list_and_dictionary(dictionary_of_unique_terms, self.range_term_parser(current_term))
                             if not more_words:
                                 break
                             continue
@@ -584,7 +601,7 @@ class Parser:
 
 
                     else:
-                        dictionary_of_unique_terms = self.combine_lists(dictionary_of_unique_terms, self.range_term_parser(current_term))
+                        self.combine_list_and_dictionary(dictionary_of_unique_terms, self.range_term_parser(current_term))
                         if not more_words:
                             break
                         continue
@@ -593,6 +610,10 @@ class Parser:
                     if not more_words:
                         self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
                         break
+                    if more_words:
+                        text = next_term + " "+text
+                        index= len(next_term)
+
 
                     # If there are more terms
                     more_words = index != -1
@@ -617,8 +638,10 @@ class Parser:
                             break
                         continue
 
+
                     if self.is_weight_measurement(lower):
                         current_term = current_term + " " + next_term
+
                         self.add_to_term_dic(dictionary_of_unique_terms, self.convert_to_kg(current_term))
                         if not more_words:
                             break
@@ -649,7 +672,6 @@ class Parser:
                     self.add_to_term_dic(dictionary_of_unique_terms,self.convert_number_to_wanted_state(current_term))
                     text = next_term + " " + text
                     continue
-
             # If the term is not an integer
             # if the tern starts with $
             if current_term[0] == '$':
@@ -793,8 +815,8 @@ class Parser:
 
                 flag1 = self.is_integer(next_term)
                 flag2 = self.is_integer_that_ends_with_th(next_term)
-                flag3 = self.is_integer_that_ends_with_th(next_term[:-1]) and next_term[len(next_term) - 1] == ','
-                flag4 = self.is_integer(next_term[:-1]) and next_term[len(next_term)-1] == ','
+                flag3 = len(next_term)!=0 and (self.is_integer_that_ends_with_th(next_term[:-1]) and next_term[len(next_term) - 1] == ',')
+                flag4 = len(next_term)!=0 and (self.is_integer(next_term[:-1]) and next_term[len(next_term)-1] == ',')
                 if flag2 or flag1 or flag3 or flag4:
 
                     day = next_term
@@ -826,19 +848,21 @@ class Parser:
 
                     if not self.is_integer(next_term):
                         text = next_term
-                        self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
+                        self.combine_list_and_dictionary(dictionary_of_unique_terms,self.full_date(current_term))
+                        continue
 
                     current_term = current_term + " " + next_term
-                    self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
+                    self.combine_list_and_dictionary(dictionary_of_unique_terms,self.full_date(current_term))
                     if not more_words:
                        break
                     continue
             # If the term is a term for a full date
             if self.is_date(current_term):
-                self.add_to_term_dic(dictionary_of_unique_terms,self.full_date(current_term))
+                self.combine_list_and_dictionary(dictionary_of_unique_terms,self.full_date(current_term))
                 if not more_words:
                    break
                 continue
+
 
             # If the term is a type of range term
             if self.is_word_number(current_term):
@@ -905,6 +929,8 @@ class Parser:
         if number_of_hyphens != 1:
             return False
         second = term[term.find('-')+1:]
+        if len(second) == 0:
+            return False
         return self.is_number_term(second)
 
     # Returns True if the term is a number (like 100,000 and not 10,0,0)
@@ -936,11 +962,12 @@ class Parser:
     def combine_list_and_dictionary(self,dic, list):
         for i in range(0, len(list)):
             self.add_to_term_dic(dic,list[i])
-        return
 
     # If the term ia=s a term number like 50, 50K and so on
     def is_number_term(self,term):
         length = len(term)
+        if len(term) ==0:
+            return False
         term = term.lower()
         if self.is_number(term):
             return True
@@ -948,7 +975,7 @@ class Parser:
             return self.is_number(term[:-1])
         if term[-2:] == 'bn':
             return self.is_number(term[:-2])
-        return False
+        return self.is_fraction(term)
 
     # This function will check if the number is soething like this 14th,30th..
     def is_integer_that_ends_with_th(self,number):
@@ -1065,7 +1092,7 @@ class Parser:
             return math.pow(10, -3 - 3)
 
     def is_weight_measurement(self,term):
-        return term in ["gram","g","grams","decagram","dag","decagrams","hectogram","hg","hectograms","kilogram","kg","kilograms","tonne","ton","tons","decigram","dg","decigrams","centigram","cg","centigrams","milligram","mg","milligrams"]
+        return term.lower() in ["gram","g","grams","decagram","dag","decagrams","hectogram","hg","hectograms","kilogram","kg","kilograms","tonne","ton","tons","decigram","dg","decigrams","centigram","cg","centigrams","milligram","mg","milligrams"]
     # convert any measer unit into kg
     def convert_to_kg(self, weigth):
         weigth = self.convert_to_degit_num(weigth)
@@ -1092,6 +1119,8 @@ class Parser:
     # if we get 200 hundred kg it will return 20000.0kg
     def convert_to_degit_num(self, str):
         arrStr = str.split()
+        if len(arrStr)==3 and self.is_fraction(arrStr[1]):
+            arrStr = [self.fraction_to_number(arrStr[0],arrStr[1]),arrStr[2]]
         if len(arrStr) == 3:
             arrStr = [(self.parseNumber(arrStr[0] + " " + arrStr[1])), arrStr[2]]
         if len(arrStr) == 2:
@@ -1099,20 +1128,29 @@ class Parser:
             if self.is_string(x):
                 x = arrStr[0]
             else:
-                x = "%d" % x
+                x = "%f" % x
             weigt = x + (arrStr[1])
             return weigt
         return str
 
+    def fraction_to_number(self,integer,fraction):
+        index = fraction.find("/")
+        return float(integer)+(float(fraction[:index])/float(fraction[index+1:]))
 
 
 
 #x = Parser()
-#dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms('guy[')
+#ng = open("test.txt","r")
+#strr = ""
+#for line in ng:
+#    strr = strr +line
+#print(strr)
+#dic , dictionary_of_unique_terms,max_f=x.parse_to_unique_terms(strr)
 #print(dic)
 #print(dictionary_of_unique_terms)
 #print(max_f)
 
 # check 14-3 3/4
 # or word-3 3/4
+
 

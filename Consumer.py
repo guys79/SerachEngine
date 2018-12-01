@@ -1,5 +1,5 @@
 import threading
-from StopWordsHolder import StopWordsHolder
+import Queue
 # This class will be the consumer of the index
 # This class will be responsible for one file and will update it
 # Using the list of the index
@@ -8,95 +8,116 @@ class Consumer (threading.Thread):
     file_path = None # The path of the file
     posting_file = None # The posting file
     list_of_line_positions = None # List of all the line positions in char (the position of the first character in the line)
+    line_length = -1 # The constant length of the line
+    doc_id_length = -1# The constant length of the doc_id
+    tf_length = -1# The constant length of the tf
+    pointer_length = -1# The constant length of the pointer
+    number_last_line = -1 # number of lines on the file
+    dictionary_of_terms = None # The main dictionary in the indexer
+    index_of_location_in_file = -1 # The index in the dictionary value that represents the number of line in the posting that the term begins
+
+
     # The constructor of the class
-    def __init__(self,list_of_terms,file_name,file_type):
+    def __init__(self,list_of_terms,file_name,file_type,dictionary_of_terms,index_of_location_in_file):
         threading.Thread.__init__(self)
         self.list_of_terms = list_of_terms
         self.file_path = "%s.%s" % (file_name,file_type)
-        #self.posting_file = open(self.file_path,"w")
-        self.posting_file = open(self.file_path,"r")
-        self.posting_file.close()
         self.list_of_line_positions = [0]
-
+        self.line_length = 22
+        self.doc_id_length = 7
+        self.tf_length = 5
+        self.pointer_length = 10
+        self.number_last_line = 0
+        self.dictionary_of_terms = dictionary_of_terms
+        self.index_of_location_in_file = index_of_location_in_file
 
 
     def run(self):
-        print("implemented function")
+        self.consume()
 
     def consume(self):
-        while True:
+        while not self.list_of_terms.empty():
+        #while True:
             item = self.list_of_terms.get()
             self.process(item)
             self.list_of_terms.task_done()
 
     def process(self,item):
-        #If new, find the right place to insert, and than insert and update the list of line positions
-        #if not new, find the term, add the gap, update the list
-        self.posting_file = open(self.file_path,"r+")
-        begin = 0
-        end = self.posting_file.tell()
-        self.posting_file.seek()
+        print item
+        print self.dictionary_of_terms[item[0]][self.index_of_location_in_file]
+        self.add_new_line(self.dictionary_of_terms[item[0]][self.index_of_location_in_file], item[1], item[2])
+        if self.dictionary_of_terms[item[0]][self.index_of_location_in_file] == -1:
+            self.dictionary_of_terms[item[0]][self.index_of_location_in_file] = self.number_last_line - 1
+        return
 
-    # If this is the first appearance of the term
-    def new_case(self,term,doc_id,number_of_occurrences):
+
+    # doc_id = 7 digits
+    # tf = 5 digits
+    # pointer 10 digit
+    def find_term_location(self,term_location):
+
+
+        returned_pointer = -1
+        # doc_id = line[:doc_id_length]
+        # tf = line[doc_id_length:doc_id_length+tf_length]
+        # print line
+        # print(doc_id)
+        # print(tf)
+        # print(pointer)
+        last_doc_id = 0
+        term_location = term_location * self.line_length
+        returned_pointer = term_location
+        null_pointer = self.define_null_pointer()
+        self.posting_file.seek(term_location)
+        line = self.posting_file.read(self.line_length)
+        pointer = line[self.doc_id_length + self.tf_length:]
+        last_doc_id = last_doc_id + self.string_to_number(line[:self.doc_id_length])
+        pointer_in_num = self.string_to_number(pointer)
+        pointer_in_num = pointer_in_num * self.line_length
+
+        while (pointer != null_pointer):
+            self.posting_file.seek(pointer_in_num)
+            line = self.posting_file.read(self.line_length)
+            pointer = line[self.doc_id_length + self.tf_length:]
+            last_doc_id = last_doc_id + self.string_to_number(line[:self.doc_id_length])
+            returned_pointer = pointer_in_num
+            pointer_in_num = self.string_to_number(pointer)
+            pointer_in_num = pointer_in_num * self.line_length
+        return returned_pointer, last_doc_id
+
+    def define_null_pointer(self):
+        null_pointer = ""
+        for i in range(0, self.pointer_length):
+            null_pointer = null_pointer + "0"
+        return null_pointer
+
+    def string_to_number(self,string_num):
+        return int(string_num)
+
+    def number_to_string(self,num, string_length):
+        new_string = ""
+        num_as_string = str(num)
+        for i in range(0, string_length - len(num_as_string)):
+            new_string = new_string + "0"
+        new_string = new_string + num_as_string
+        return new_string
+
+    def add_new_line(self,term_location,  doc_id,tf):
+
+        null_pointer = self.define_null_pointer()
         self.posting_file = open(self.file_path, "r+")
-        index = self.binary_search_nearest(term)
-        new_line = "%s[%d_%d]" % (term,doc_id,number_of_occurrences)
-        print(index)
-        self.posting_file.seek(index)
-        self.posting_file.write(new_line)
+        if term_location != -1:
+            index, last_doc_id = self.find_term_location(term_location)
+            doc_id = doc_id - last_doc_id  # The gap
+            self.posting_file.seek(index + self.tf_length + self.doc_id_length)
+            self.posting_file.write(self.number_to_string(self.number_last_line, self.pointer_length))
+
+        new_string = "%s%s%s" % (self.number_to_string(doc_id, self.doc_id_length), self.number_to_string(tf, self.tf_length), null_pointer)
+        self.posting_file.seek(0, 2)
+        self.posting_file.write(new_string)
         self.posting_file.close()
-        return
+        self.number_last_line = self.number_last_line + 1
 
-    # If this is not the first appearance of the term
-    def old_case(self,term,doc_id,number_of_occurrences):
-        return
-
-    def binary_search_nearest(self, key):
-
-        begin = 0
-        end = len(self.list_of_line_positions) - 1
-        index = -1
-        line = ""
-        while begin <= end:
-            middle = (begin + end) / 2
-            self.posting_file.seek(self.list_of_line_positions[middle])
-            if middle != len(self.list_of_line_positions) -1:
-                line = self.posting_file.read(self.list_of_line_positions[middle+1]-self.list_of_line_positions[middle]-1)
-            else:
-                line = self.posting_file.read()
-            term = self.get_term(line)
-            if key > term:
-                begin = middle + 1
-            else:
-                index = self.list_of_line_positions[middle]
-                end = middle - 1
-        return index
-
-    def get_term(self,long_string):
-        return long_string[:long_string.find(",[")]
-
-
-
-x = Consumer([],"test","txt")
-s = StopWordsHolder()
-indices = [0]
-
-for i in range(0,len(s.list_of_stop_words)-1):
-    if i == 179:
-        print s.list_of_stop_words[i]
-    indices.append(indices[i]+2+len(s.list_of_stop_words[i]))
-x.list_of_line_positions = indices
-print(indices)
-
-filrd = open("test.txt","w")
-sd=""
-for i in range(0,len(s.list_of_stop_words)):
-    sd = sd + s.list_of_stop_words[i] +",["
-sd=sd[:-1]
-filrd.writelines(sd)
-filrd.close()
-x.new_case("guy",7,6)
 
 
 

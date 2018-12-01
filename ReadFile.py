@@ -1,7 +1,7 @@
 import os
 
 class ReadFile:
-    my_dict = {}
+    max_values_dict = {}
     indexInFile = 0 # The index in the docsInFile list
     indexInDirectory = 0 # The index of the namesInDirectory list
     namesInDirectory = [] # The paths of all the files in the corpus
@@ -10,7 +10,7 @@ class ReadFile:
     dictionary_doc_name_id = {} # A dictionary, The key is the name of the doc, and the value is the dicId
 
     # a helper function that should find the name of the document
-    def findTheName(self,content,firstLine):
+    def __findTheName(self,content,firstLine):
         found1 = -1
         i = firstLine
         while found1==-1:
@@ -24,12 +24,12 @@ class ReadFile:
         return nameOfFile
 
     # this function should get the name of the file and return arr of strings that contains the lines of the file
-    def store_files(self, start, end,content):
-        newArrey=[]
+    def __store_files(self, start, end,content):
+        newArrey=""
         for i in range(start, end+1):
-            newArrey.append(content[i])
+            newArrey= newArrey +" "+content[i]
 
-        name = self.findTheName(content,start)
+        name = self.__findTheName(content,start)
         tempArr=[self.doc_id_generator,newArrey]
         self.dictionary_doc_name_id[self.doc_id_generator] =name
         self.doc_id_generator = self.doc_id_generator + 1
@@ -39,7 +39,7 @@ class ReadFile:
 
         # check if all docs have been returned
         if self.indexInDirectory==len(self.namesInDirectory):
-            return "all docs are received"
+            return "all docs are received","all docs are received"
         # in case we have to create a new arrey out of a file that includes a lot of docs
         if self.indexInFile==len(self.docsInFile):
             self.docsInFile=[]
@@ -55,7 +55,7 @@ class ReadFile:
                             num = i
                             while False == ("</DOC>" in arreyOfFile[num]):
                                 num = num + 1
-                            self.store_files(i, num, arreyOfFile)
+                            self.__store_files(i, num, arreyOfFile)
                 the_file.close()
             self.indexInFile=0
             return self.getFile()
@@ -63,7 +63,15 @@ class ReadFile:
             self.indexInFile=self.indexInFile+1
             if self.indexInFile == len(self.docsInFile):
                 self.indexInDirectory = self.indexInDirectory + 1
-            return self.docsInFile[self.indexInFile-1]
+            return self.docsInFile[self.indexInFile-1][0],self.docsInFile[self.indexInFile-1][1]
+
+    def add_to_max_values_dict(self,maxValue,docNum):
+        self.max_values_dict[docNum]=maxValue
+
+    def get_max_values_dict(self,docNum):
+        return self.max_values_dict[docNum]
+
+
 
     # we initilize the class
     def __init__(self,path):
@@ -78,6 +86,3 @@ class ReadFile:
             filename=path+slesh+filename
             self.namesInDirectory.append(filename)
         return
-
-
-
