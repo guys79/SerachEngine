@@ -47,9 +47,20 @@ class Parser:
             return num_in_string
         if len(num_in_string)-index>3:
             if num_in_string[index+3]>='5':
-                return num_in_string[:index+2]+chr(ord(num_in_string[index+2])+1)
-            return num_in_string[:index + 3]
-        return num_in_string
+                return_string = num_in_string[:index+2]+chr(ord(num_in_string[index+2])+1)
+            else:
+                return_string = num_in_string[:index + 3]
+        else:
+            if num_in_string[len(num_in_string)-2]==".":
+                return_string = num_in_string+"0"
+            else:
+                return_string=num_in_string
+        if return_string[len(return_string)-1]=='0':
+            if return_string[len(return_string) - 2] == '0':
+                return return_string[:-3]
+            return return_string[:-1]
+
+        return return_string
 
     # This function will return the maximum frequency of a certain ter in two dictionaries
     def max_frequency(self,dictionary, dictionary_of_unique_terms):
@@ -167,17 +178,18 @@ class Parser:
 
     # This function will handle a word regard to small and big letters and adds the word the the dictionary
     def word_scan(self,word,dictionary):
+
         flag = len(word) > 0 and word[0] >= 'A' and word[0] <= 'Z'
         try:
             word = self.porter_stemmer.stem(word).encode("ascii")
         except UnicodeDecodeError:
             1
+
         upper_word = word.upper()
         numer_of_app = 0
         if flag:
             if upper_word in dictionary:
-                numer_of_app = dictionary[upper_word]
-            dictionary[upper_word] = numer_of_app + 1
+                dictionary[upper_word] = dictionary[upper_word] + 1
         elif len(word)>0 and word[0]>='a' and word[0]<='z':
             lower_word = word.lower()
             if lower_word in dictionary:
@@ -317,10 +329,7 @@ class Parser:
         list_to_return.append('%s-%s' % (first_half,second_half))
         return list_to_return
 
-    # This function will get the String that will represent the doc
-    # and will Parse it
-    def parse_doc(self,doc_text):
-        temp_text = doc_text
+
 
     # this function should return DD-MM-YY format for all the formats of how to write full date
     def full_date(self, term):
@@ -1140,6 +1149,7 @@ class Parser:
 
 
 #x = Parser()
+
 #ng = open("test.txt","r")
 #strr = ""
 #for line in ng:

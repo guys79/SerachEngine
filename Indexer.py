@@ -3,6 +3,7 @@ from Parser import Parser
 from ReadFile import ReadFile
 import Queue
 import  threading
+from Consumer import Consumer
 from ParserThread import ParserThread
 from AddToDictionaryThread import AddToDictionaryThread
 # This class will index all the terms in the collection
@@ -12,18 +13,18 @@ class Indexer:
     parser = None # The parser of the project
     read_file = None # The ReadFile of the class
     main_dictionary = None
-    empty_semaphores = None
-    queue_of_parser = None
+    temp_position_dic = None
     # The constructor of the class
     def __init__(self, corpus_file_path):
-        self.queue_of_parser = Queue.Queue()
-        self.name_of_files = []
+        self.name_of_files = {}
         # Initializing the names of the files
         for i in range(0,26):
-            self.name_of_files.append(chr(ord('a')+i))
+            for j in range(0, 26):
+                self.name_of_files["%s%s"%((chr(ord('a')+i)),(chr(ord('a')+j)))] = Queue.Queue()
         for i in range(0,10):
-            self.name_of_files.append('%d' % i)
-        self.name_of_files.append('other')
+            for j in range(0, 10):
+                self.name_of_files["%s%s"%(('%d' % i),('%d' % j))] = Queue.Queue()
+        self.name_of_files['other'] = Queue.Queue()
 
         # The file type is txt
         self.file_type = 'txt'
@@ -36,11 +37,13 @@ class Indexer:
         # Initializing the ReadFile
         self.read_file = ReadFile(corpus_file_path)
 
-        # Initializing the array of semaphores
-        self.empty_semaphores = []
 
         # Initializing the dictionary
         self.main_dictionary = {}
+
+        self.temp_position_dic = {}
+
+
 
    # def add_to_dicts(self):
     #    numOfDoc, text = self.read_file.getFile()
@@ -85,92 +88,98 @@ class Indexer:
         #    add_to_dictionary_threads[i].join()
     #print(self.main_dictionary)
 
-    def add_to_dicts(self,texts):
-        for i in range(0,len(texts)):
-            dictionary_of_words, dictionary_of_unique_terms, max_freq = self.parser.parse_to_unique_terms(texts[i][0])
-            self.add_to_main_dictionary_spacial(dictionary_of_unique_terms)
-            for key in dictionary_of_words:
-                self.add_term_to_dictionary(key, dictionary_of_words[key])
-            self.read_file.add_to_max_values_dict(max_freq, texts[i][1])
 
-
-    def add_to_dic_threads(self,num_of_docs):
-        numOfDoc, text = self.read_file.getFile()
-        coun = 0
-        texts = []
-        threads = []
-        while text is not "all docs are received" and coun!=6000:
-            coun+=1
-            print(coun)
-            if coun% num_of_docs == 0:
-                thread = threading.Thread(target=self.add_to_dicts(texts))
-                texts = []
-                threads.append(thread)
-                thread.start()
-            text = self.find_sub("TEXT", text)
-            texts.append((text,numOfDoc))
-            numOfDoc, text = self.read_file.getFile()
-
-        for i in range(0,len(threads)):
-            threads[i].join()
 
     def add_to_dicts2(self):
         numOfDoc, text = self.read_file.getFile()
         coun=0
-        while text is not "all docs are received":
+        num =0
+        while text is not "all docs are received" and coun!=1000:
             coun+=1
             print(coun)
+
             text = self.find_sub("TEXT", text)
-            if coun==11563:
-                print text
-            if coun>11562:
-                dictionary_of_words, dictionary_of_unique_terms, max_freq = self.parser.parse_to_unique_terms(text)
-                self.add_to_main_dictionary_spacial(dictionary_of_unique_terms)
-                for key in dictionary_of_words:
-                    self.add_term_to_dictionary(key, dictionary_of_words[key])
-                self.read_file.add_to_max_values_dict(max_freq, numOfDoc)
+            dictionary_of_words, dictionary_of_unique_terms, max_freq = self.parser.parse_to_unique_terms(text)
+            self.add_to_main_dictionary_spacial(dictionary_of_unique_terms, numOfDoc)
+            for key in dictionary_of_words:
+                key = self.add_term_to_dictionary(key)
+                self.add_term_to_queue(key, numOfDoc, dictionary_of_words[key])
+            self.read_file.add_to_max_values_dict(max_freq, numOfDoc)
             numOfDoc, text = self.read_file.getFile()
-    def add_to_main_dictionary_spacial(self,dict):
+
+    def index_files(self):
+        thread_add_to_dic = threading.Thread(target=self.add_to_dicts2())
+        threads = []
+        for name in self.name_of_files:
+            thread = Consumer(self.name_of_files[name],name,self.file_type,self.main_dictionary,1,self.temp_position_dic)
+            threads.append(thread)
+            thread.start()
+        thread_add_to_dic.start()
+        thread_add_to_dic.join()
+        for i in range(0,len(threads)):
+            threads[i].stop_thread()
+        for i in range(0, len(threads)):
+            threads[i].join()
+
+    def add_to_main_dictionary_spacial(self,dict,doc_id):
         for key in dict:
             if key in self.main_dictionary:
-                self.main_dictionary[key] = self.main_dictionary[key] + dict[key]
+                self.main_dictionary[key][0] = self.main_dictionary[key][0] + 1
             else:
-                self.main_dictionary[key]=dict[key]
+                self.main_dictionary[key] = [1,-1]
+                self.temp_position_dic[key] = [-1,-1]
 
+            self.add_term_to_queue(key,doc_id,self.main_dictionary[key][0])
 
+    def add_term_to_queue(self,term,doc_id,tf):
+        note = term[0].lower()
+        note2=note
+        flag1=(note>='a' and note<='z')
+        flag2=(note>='0' and note<='9')
+        if flag1 or flag2:
+            if len(term) > 1:
+                low = term[1].lower()
+                if ((low>='a' and low<='z') and flag1) or ((low>='0' and low<='9') and flag2):
+                    note2 = term[1].lower()
+            self.name_of_files["%s%s"%(note,note2)].put((term,doc_id,tf))
+            return
+        self.name_of_files['other'].put((term, doc_id, tf))
     # This function will create the initial posting files
     def create_initial_posting_file(self):
         # Go through every file name and create it
-        for i in range(0,len(self.name_of_files)):
-            file = open("%s.%s" % (self.name_of_files[i],self.file_type),"w")
+        for name in self.name_of_files:
+            file = open("%s.%s" % (name,self.file_type),"w")
             file.close()
-            os.remove(file.name) # just for now
+            #os.remove(file.name) # just for now
 
     # This function will add a term to the dictionary
-    def add_term_to_dictionary(self,term,count):
+    def add_term_to_dictionary(self,term):
         # If the term is already in the dictionary
         if term in self.main_dictionary:
-            self.main_dictionary[term] = self.main_dictionary[term] + count
-            return
+            self.main_dictionary[term][0] = self.main_dictionary[term][0] + 1
+            return term
 
         # If the term starts with a capital letter
         if term[0]>='A' and term[0]<='Z':
             lower = term.lower()
             # If the term is already in the dictionary in small letters
             if lower in self.main_dictionary:
-                self.main_dictionary[lower] = self.main_dictionary[lower] + count
-                return
+                self.main_dictionary[lower][0] = self.main_dictionary[lower][0] + 1
+                return lower
 
         elif term[0] >= 'a' and term[0] <= 'z':
             upper = term.upper()
             # If the term is already in the dictionary in small letters
             if upper in self.main_dictionary:
-                self.main_dictionary[term] = self.main_dictionary[upper] + count
+                self.main_dictionary[term] = [self.main_dictionary[upper][0] + 1,-1]
+                self.temp_position_dic[term] = [self.temp_position_dic[key][0], self.temp_position_dic[key][1]]
+                del self.temp_position_dic[upper]
                 del self.main_dictionary[upper]
-                return
-
+                return term
         # If the term is new in the dictionary
-        self.main_dictionary[term] = count
+        self.main_dictionary[term] = [1,-1]
+        self.temp_position_dic[term]=[-1,-1]
+        return term
 
     # This function will return the string between two tags
     def find_sub(self, tag, string):
@@ -180,13 +189,31 @@ class Indexer:
         return string
 
 
+def print_dif(dicsss):
+    lists = []
+    for key in dicsss:
+        lists.append(key)
+    lists.sort()
+    for i in range(0,len(lists)):
+        print("%s %d %d" % (lists[i], dicsss[lists[i]][0], dicsss[lists[i]][1]))
 
-
-
+import time
+y = time.time()
 x = Indexer("C:\Users\guy schlesinger\Desktop\corpus")
-x.add_to_dicts2()
-#import time
-#y = time.time()
+x.index_files()
+sorted(x.main_dictionary)
+print_dif(x.main_dictionary)
+flag =True
+for key in x.name_of_files:
+    if not x.name_of_files[key].empty():
+        print("problem - "+key)
+    flag = flag and x.name_of_files[key].empty()
+print(flag)
+print(time.time()-y)
+
+
+
+
 #x.add_to_dic_threads(2000)
 #z=-(y-time.time())
 #y = time.time()

@@ -4,7 +4,7 @@ import Queue
 # This class will be responsible for one file and will update it
 # Using the list of the index
 class Consumer (threading.Thread):
-    list_of_terms = None # The list of terms, each term is (term,doc_num,number of occurrences, new or not)
+    list_of_terms = None # The list of terms, each term is (term,doc_num,number of occurrences)
     file_path = None # The path of the file
     posting_file = None # The posting file
     list_of_line_positions = None # List of all the line positions in char (the position of the first character in the line)
@@ -15,10 +15,12 @@ class Consumer (threading.Thread):
     number_last_line = -1 # number of lines on the file
     dictionary_of_terms = None # The main dictionary in the indexer
     index_of_location_in_file = -1 # The index in the dictionary value that represents the number of line in the posting that the term begins
-
-
+    exit_sign = None
+    is_waiting = None
+    lock = None
+    temp_position_dic = None
     # The constructor of the class
-    def __init__(self,list_of_terms,file_name,file_type,dictionary_of_terms,index_of_location_in_file):
+    def __init__(self,list_of_terms,file_name,file_type,dictionary_of_terms,index_of_location_in_file,temp_position_dic):
         threading.Thread.__init__(self)
         self.list_of_terms = list_of_terms
         self.file_path = "%s.%s" % (file_name,file_type)
@@ -30,25 +32,35 @@ class Consumer (threading.Thread):
         self.number_last_line = 0
         self.dictionary_of_terms = dictionary_of_terms
         self.index_of_location_in_file = index_of_location_in_file
+        self.exit_sign = False
+        self.is_waiting = True
+        self.lock = threading.Lock()
+        self.temp_position_dic =temp_position_dic
 
 
     def run(self):
         self.consume()
+        print(self.file_path+" Done!")
 
     def consume(self):
-        while not self.list_of_terms.empty():
-        #while True:
-            item = self.list_of_terms.get()
-            self.process(item)
-            self.list_of_terms.task_done()
+        while not self.exit_sign or not self.list_of_terms.empty():
+            try:
+                item = self.list_of_terms.get(True,1)
+                self.process(item)
+                self.list_of_terms.task_done()
+            except Queue.Empty:
+                1
+
+
 
     def process(self,item):
-        print item
-        print self.dictionary_of_terms[item[0]][self.index_of_location_in_file]
-        self.add_new_line(self.dictionary_of_terms[item[0]][self.index_of_location_in_file], item[1], item[2])
+        self.add_new_line(self.dictionary_of_terms[item[0]][self.index_of_location_in_file], item[1], item[2],item[0])
         if self.dictionary_of_terms[item[0]][self.index_of_location_in_file] == -1:
             self.dictionary_of_terms[item[0]][self.index_of_location_in_file] = self.number_last_line - 1
         return
+
+    def stop_thread(self):
+        self.exit_sign = True
 
 
     # doc_id = 7 digits
@@ -102,22 +114,26 @@ class Consumer (threading.Thread):
         new_string = new_string + num_as_string
         return new_string
 
-    def add_new_line(self,term_location,  doc_id,tf):
+    def add_new_line(self,term_location,  doc_id,tf,term):
 
         null_pointer = self.define_null_pointer()
         self.posting_file = open(self.file_path, "r+")
         if term_location != -1:
-            index, last_doc_id = self.find_term_location(term_location)
+            #index, last_doc_id = self.find_term_location(term_location)
+            index = self.temp_position_dic[term][1]
+            last_doc_id = self.temp_position_dic[term][0]
             doc_id = doc_id - last_doc_id  # The gap
             self.posting_file.seek(index + self.tf_length + self.doc_id_length)
             self.posting_file.write(self.number_to_string(self.number_last_line, self.pointer_length))
 
         new_string = "%s%s%s" % (self.number_to_string(doc_id, self.doc_id_length), self.number_to_string(tf, self.tf_length), null_pointer)
-        self.posting_file.seek(0, 2)
+        self.posting_file.close()
+        self.posting_file = open(self.file_path, "a")
         self.posting_file.write(new_string)
         self.posting_file.close()
+        self.temp_position_dic[term][0] = doc_id
+        self.temp_position_dic[term][1] = self.number_last_line
         self.number_last_line = self.number_last_line + 1
-
 
 
 
